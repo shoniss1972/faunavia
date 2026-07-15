@@ -6,6 +6,8 @@ extends Node
 const EQUIPMENT_WEIGHT := {
 	"divided_cage": 8.0,
 	"gloves": 0.0,
+	"ramp": 6.0,
+	"leash": 0.0,
 }
 
 var current_level := 0

@@ -45,6 +45,8 @@ const DATA := [
 const EQUIPMENT_NAMES := {
 	"divided_cage": "Divided Cage",
 	"gloves": "Gloves",
+	"ramp": "Loading Ramp",
+	"leash": "Leash",
 }
 
 

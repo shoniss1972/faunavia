@@ -189,8 +189,10 @@ func _validate() -> Dictionary:
 					Animals.display_name(id), Animals.display_name(other)]}
 
 	for id in animals:
-		if Animals.get_data(id).get("needs_gloves", false) and not equipped.get("gloves", false):
-			return {"ok": false, "reason": "The %s is sly — pack gloves first." % Animals.display_name(id)}
+		for req in Animals.get_data(id).get("requires", []):
+			if not equipped.get(req, false):
+				return {"ok": false, "reason": "The %s needs %s aboard." % [
+					Animals.display_name(id), Levels.equipment_name(req)]}
 
 	return {"ok": true, "reason": "Ready to depart!"}
 
