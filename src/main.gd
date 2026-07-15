@@ -118,7 +118,18 @@ func _process(delta: float) -> void:
 	_update_comfort(delta)
 
 	fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
+	_update_fuel_colour()
 	queue_redraw()
+
+
+func _update_fuel_colour() -> void:
+	# Warn as the range meter runs low, so the fuel stakes read at a glance.
+	var col := Color("#e8ede4")
+	if fuel <= 15.0:
+		col = Color("#e06a4a")
+	elif fuel <= 30.0:
+		col = Color("#e8b84a")
+	fuel_label.add_theme_color_override("font_color", col)
 
 
 func _update_comfort(delta: float) -> void:
