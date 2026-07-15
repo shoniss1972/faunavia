@@ -7,7 +7,9 @@ const MAX_SPEED := 260.0
 const ACCELERATION := 150.0
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
-const FUEL_DRAIN := 5.5
+const FUEL_PER_PX := 0.012          # fuel burned per pixel travelled at zero load
+const START_FUEL := 55.0
+const FUEL_PICKUP_AMOUNT := 45.0
 const REST_HEIGHT := 25.0
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
@@ -16,7 +18,7 @@ const SUSPENSION_DAMPING := 11.0
 # 0..1 load factor from GameState, feeds handling, fuel use, and suspension sag
 # so the cargo is felt, not just labelled.
 const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at load 1.0
-const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at load 1.0
+const FUEL_MASS_PENALTY := 3.3     # multiplies fuel burn per pixel at load 1.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
 const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
@@ -84,9 +86,7 @@ func _process(delta: float) -> void:
 
 	if driving and fuel > 0.0:
 		var accel := ACCELERATION * (1.0 - load_factor * ACCEL_MASS_PENALTY)
-		var drain := FUEL_DRAIN * (1.0 + load_factor * FUEL_MASS_PENALTY)
 		speed = min(speed + accel * delta, MAX_SPEED)
-		fuel = max(fuel - drain * delta, 0.0)
 	elif braking:
 		speed = max(speed - BRAKING * delta, 0.0)
 	else:
@@ -96,11 +96,15 @@ func _process(delta: float) -> void:
 		speed = max(speed - BRAKING * delta, 0.0)
 		message_label.text = "Out of fuel — coast if you can, or reset."
 
-	vehicle_x = min(vehicle_x + speed * delta, TRACK_LENGTH)
+	# Fuel is a range meter: distance travelled burns fuel, and a heavier load
+	# burns more per pixel. Speed is a comfort concern, not a fuel one.
+	var dist := speed * delta
+	fuel = max(fuel - FUEL_PER_PX * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
+	vehicle_x = min(vehicle_x + dist, TRACK_LENGTH)
 
 	if not fuel_collected and abs(vehicle_x - FUEL_PICKUP_X) < 42.0:
 		fuel_collected = true
-		fuel = min(fuel + 55.0, 100.0)
+		fuel = min(fuel + FUEL_PICKUP_AMOUNT, 100.0)
 		message_label.text = "Fuel collected. Keep going!"
 
 	if vehicle_x >= FINISH_X:
@@ -360,7 +364,7 @@ func _reset_run() -> void:
 	has_cage = "divided_cage" in GameState.loadout_equipment
 	vehicle_x = 100.0
 	speed = 0.0
-	fuel = 62.0
+	fuel = START_FUEL
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
 	body_vy = 0.0
 	comfort = COMFORT_MAX
@@ -374,6 +378,6 @@ func _reset_run() -> void:
 	brake_pressed = false
 	fuel_collected = false
 	finished = false
-	fuel_label.text = "Fuel: 62%   Speed: 0"
+	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(START_FUEL)
 	message_label.text = "Press DRIVE to coax %s aboard." % _crew_label()
 	queue_redraw()
