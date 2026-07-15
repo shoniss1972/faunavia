@@ -1,0 +1,26 @@
+; Engine configuration file.
+; Edit through the Godot editor where possible.
+
+config_version=5
+
+[application]
+
+config/name="Faunavia"
+run/main_scene="res://src/main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[display]
+
+[display/window]
+size/viewport_width=720
+size/viewport_height=1280
+size/window_width_override=360
+size/window_height_override=640
+stretch/mode="canvas_items"
+handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.86, 0.92, 0.84, 1)
