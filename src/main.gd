@@ -56,6 +56,7 @@ var body_y := 0.0
 var body_vy := 0.0
 var comfort := COMFORT_MAX
 var passenger_state := "content"
+var ever_annoyed := false
 var passengers: Array[String] = []
 var load_factor := 0.5
 var has_cage := false
@@ -151,6 +152,7 @@ func _update_comfort(delta: float) -> void:
 
 	if comfort <= COMFORT_ANNOYED:
 		passenger_state = "annoyed"
+		ever_annoyed = true
 	elif comfort >= COMFORT_DELIGHTED and speed > 120.0:
 		passenger_state = "delighted"
 	else:
@@ -209,14 +211,16 @@ func _crew_label() -> String:
 
 
 func _advance_after_delivery() -> void:
-	# The mission is delivered. Move to the next level's prep, or mark the
-	# campaign complete after the last one, then return to the prep screen.
+	# The mission is delivered. Score the run, record it (which unlocks the next
+	# level and saves), then return to the level select.
 	advancing = true
-	if GameState.has_more_levels():
-		GameState.advance_level()
-	else:
-		GameState.campaign_done = true
-	get_tree().change_scene_to_file("res://src/prep.tscn")
+	var earned := 1                        # delivered the crew
+	if not ever_annoyed:
+		earned += 1                        # kept every passenger comfortable
+	if fuel >= 25.0:
+		earned += 1                        # arrived with fuel to spare
+	GameState.record_result(GameState.current_level, earned)
+	get_tree().change_scene_to_file("res://src/level_select.tscn")
 
 
 func _load_line() -> String:
@@ -459,6 +463,7 @@ func _reset_run() -> void:
 	body_vy = 0.0
 	comfort = COMFORT_MAX
 	passenger_state = "content"
+	ever_annoyed = false
 	is_loaded = false
 	loading = false
 	load_t = 0.0

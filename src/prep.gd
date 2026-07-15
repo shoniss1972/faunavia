@@ -20,12 +20,9 @@ var depart_button: Button
 
 
 func _ready() -> void:
-	if GameState.campaign_done:
-		_build_complete()
-	else:
-		level = Levels.get_level(GameState.current_level)
-		_build_prep()
-		_refresh()
+	level = Levels.get_level(GameState.current_level)
+	_build_prep()
+	_refresh()
 
 
 func _make_root_column() -> VBoxContainer:
@@ -115,30 +112,24 @@ func _build_prep() -> void:
 
 	status_label = _add_label(column, "", 22)
 
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 14)
+	column.add_child(buttons)
+
+	var back_button := Button.new()
+	back_button.custom_minimum_size = Vector2(0, 120)
+	back_button.add_theme_font_size_override("font_size", 24)
+	back_button.text = "← Levels"
+	back_button.pressed.connect(_on_back)
+	buttons.add_child(back_button)
+
 	depart_button = Button.new()
 	depart_button.custom_minimum_size = Vector2(0, 120)
+	depart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	depart_button.add_theme_font_size_override("font_size", 30)
 	depart_button.text = "DEPART"
 	depart_button.pressed.connect(_on_depart)
-	column.add_child(depart_button)
-
-
-func _build_complete() -> void:
-	var column := _make_root_column()
-	var top := Control.new()
-	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(top)
-	_add_label(column, "All five rescues complete!", 34)
-	_add_label(column, "Every animal reached the sanctuary. The driving toy and passenger loop hold up across the whole run.", 22)
-	var bottom := Control.new()
-	bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(bottom)
-	var again := Button.new()
-	again.custom_minimum_size = Vector2(0, 120)
-	again.add_theme_font_size_override("font_size", 30)
-	again.text = "PLAY AGAIN"
-	again.pressed.connect(_on_play_again)
-	column.add_child(again)
+	buttons.add_child(depart_button)
 
 
 func _animal_button_text(id: String, is_loaded: bool) -> String:
@@ -243,6 +234,5 @@ func _on_depart() -> void:
 	get_tree().change_scene_to_file("res://src/main.tscn")
 
 
-func _on_play_again() -> void:
-	GameState.restart()
-	get_tree().change_scene_to_file("res://src/prep.tscn")
+func _on_back() -> void:
+	get_tree().change_scene_to_file("res://src/level_select.tscn")

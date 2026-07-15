@@ -11,19 +11,72 @@ const EQUIPMENT_WEIGHT := {
 }
 const TRAILER_CAPACITY := 3        # extra slots a trailer adds
 const TRAILER_WEIGHT := 12.0       # the trailer's own handling weight
+const SAVE_PATH := "user://faunavia_save.cfg"
 
 var current_level := 0
 var loadout_animals: Array[String] = []
 var loadout_equipment: Array[String] = []
 var loadout_trailer := false
-var campaign_done := false
+
+# Best stars earned per level (0 = not yet completed). Persisted between runs.
+var stars: Array = []
+var last_earned := -1              # stars from the most recent delivery, for a toast
 
 
 func _ready() -> void:
-	# A sensible default so the driving scene is runnable on its own before a
-	# mission has been prepared (e.g. opened directly in the editor).
 	if loadout_animals.is_empty():
 		loadout_animals = ["wombat"]
+	_load()
+
+
+func _ensure_stars() -> void:
+	while stars.size() < Levels.count():
+		stars.append(0)
+
+
+func is_unlocked(index: int) -> bool:
+	# The first level is always open; each later level unlocks once the previous
+	# one has been delivered (at least one star).
+	if index <= 0:
+		return true
+	return index < stars.size() and stars[index - 1] >= 1
+
+
+func record_result(index: int, earned: int) -> void:
+	_ensure_stars()
+	last_earned = earned
+	if index >= 0 and index < stars.size():
+		stars[index] = maxi(stars[index], earned)
+	_save()
+
+
+func total_stars() -> int:
+	var t := 0
+	for s in stars:
+		t += int(s)
+	return t
+
+
+func all_complete() -> bool:
+	_ensure_stars()
+	for s in stars:
+		if int(s) < 1:
+			return false
+	return true
+
+
+func _save() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("progress", "stars", stars)
+	cfg.save(SAVE_PATH)
+
+
+func _load() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVE_PATH) == OK:
+		var saved = cfg.get_value("progress", "stars", [])
+		stars = (saved as Array).duplicate() if saved is Array else []
+	_ensure_stars()
 
 
 func set_loadout(animals: Array[String], equipment: Array[String], trailer := false) -> void:
@@ -63,9 +116,12 @@ func advance_level() -> void:
 		current_level += 1
 
 
-func restart() -> void:
+func reset_progress() -> void:
 	current_level = 0
 	loadout_animals = ["wombat"]
 	loadout_equipment = []
 	loadout_trailer = false
-	campaign_done = false
+	last_earned = -1
+	stars = []
+	_ensure_stars()
+	_save()
