@@ -14,6 +14,7 @@ const EQUIPMENT_WEIGHT := {
 var current_level := 0
 var loadout_animals: Array[String] = []
 var loadout_equipment: Array[String] = []
+var campaign_done := false
 
 
 func _ready() -> void:
@@ -55,3 +56,4 @@ func restart() -> void:
 	current_level = 0
 	loadout_animals = ["wombat"]
 	loadout_equipment = []
+	campaign_done = false

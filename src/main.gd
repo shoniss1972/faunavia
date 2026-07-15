@@ -46,9 +46,14 @@ var comfort := COMFORT_MAX
 var passenger_state := "content"
 var passengers: Array[String] = []
 var load_factor := 0.5
+var has_cage := false
 var is_loaded := false
 var loading := false
 var load_t := 0.0
+var finish_hold := 0.0
+var advancing := false
+
+const FINISH_HOLD_TIME := 2.0   # seconds to celebrate arrival before moving on
 
 
 func _ready() -> void:
@@ -57,8 +62,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if advancing:
+		return
 	if finished:
 		_update_suspension(delta)
+		finish_hold += delta
+		if finish_hold >= FINISH_HOLD_TIME:
+			_advance_after_delivery()
+			return
 		queue_redraw()
 		return
 
@@ -96,7 +107,8 @@ func _process(delta: float) -> void:
 		finished = true
 		speed = 0.0
 		passenger_state = "delighted"
-		message_label.text = "Delivered %s to the sanctuary!" % _crew_label()
+		var tail := "Preparing next mission..." if GameState.has_more_levels() else "That was the last rescue!"
+		message_label.text = "Delivered %s! %s" % [_crew_label(), tail]
 
 	_update_suspension(delta)
 	_update_comfort(delta)
@@ -144,6 +156,17 @@ func _crew_label() -> String:
 	if passengers.size() == 1:
 		return Animals.display_name(passengers[0])
 	return "the crew"
+
+
+func _advance_after_delivery() -> void:
+	# The mission is delivered. Move to the next level's prep, or mark the
+	# campaign complete after the last one, then return to the prep screen.
+	advancing = true
+	if GameState.has_more_levels():
+		GameState.advance_level()
+	else:
+		GameState.campaign_done = true
+	get_tree().change_scene_to_file("res://src/prep.tscn")
 
 
 func _load_line() -> String:
@@ -259,6 +282,10 @@ func _draw_passenger(y_offset: float) -> void:
 	for i in n:
 		var fx := lerpf(-32.0, 12.0, float(i) / float(n - 1))
 		_draw_critter(Vector2(fx, -38.0) + off, 11.0, _fur(passengers[i]))
+	if has_cage:
+		# A divider bar between the animals — the divided cage keeping the peace.
+		var bar_x := lerpf(-32.0, 12.0, 0.5)
+		draw_line(Vector2(bar_x, -50.0) + off, Vector2(bar_x, -22.0) + off, Color("#4a4f45"), 3.0)
 
 
 func _fur(id: String) -> Color:
@@ -330,6 +357,7 @@ func _on_brake_up() -> void:
 func _reset_run() -> void:
 	passengers = GameState.loadout_animals.duplicate()
 	load_factor = GameState.load_factor()
+	has_cage = "divided_cage" in GameState.loadout_equipment
 	vehicle_x = 100.0
 	speed = 0.0
 	fuel = 62.0
@@ -340,6 +368,8 @@ func _reset_run() -> void:
 	is_loaded = false
 	loading = false
 	load_t = 0.0
+	finish_hold = 0.0
+	advancing = false
 	drive_pressed = false
 	brake_pressed = false
 	fuel_collected = false

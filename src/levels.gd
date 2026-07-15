@@ -1,11 +1,12 @@
 class_name Levels
 extends RefCounted
 
-# Five short missions that escalate the prep puzzle:
+# Five short missions that escalate the prep puzzle. The gear lessons are
+# ordered so each constraint is introduced alone before it is combined:
 #   1. one placid animal — reteaches the loop with the new prep step
 #   2. two compatible animals — introduces capacity and arrangement
-#   3. fox + rabbit — first incompatibility; needs a divided cage
-#   4. lone fox — first equipment gate; needs gloves
+#   3. lone fox — first equipment gate; the sly fox needs gloves
+#   4. fox + rabbit — incompatibility; needs a divided cage (and still gloves)
 #   5. all three — combines capacity, the cage, and gloves
 #
 #   capacity  — total animal size the vehicle can hold
@@ -23,14 +24,15 @@ const DATA := [
 		"brief": "The wombat and rabbit both need a lift.",
 	},
 	{
-		"title": "Level 3 — Keep the Peace",
-		"capacity": 4, "deliver": ["fox", "rabbit"], "equipment": ["divided_cage"],
-		"brief": "Fox and rabbit together? Not without a divided cage.",
-	},
-	{
-		"title": "Level 4 — Handle With Care",
+		"title": "Level 3 — Handle With Care",
 		"capacity": 2, "deliver": ["fox"], "equipment": ["gloves"],
 		"brief": "The fox is sly. Bring gloves before you load it.",
+	},
+	{
+		"title": "Level 4 — Keep the Peace",
+		"capacity": 4, "deliver": ["fox", "rabbit"],
+		"equipment": ["divided_cage", "gloves"],
+		"brief": "Fox and rabbit together needs a divided cage — and the fox still needs gloves.",
 	},
 	{
 		"title": "Level 5 — Full Load",
