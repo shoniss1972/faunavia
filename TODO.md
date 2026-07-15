@@ -35,13 +35,13 @@
 
 **Question:** Is preparation and animal arrangement fun, rather than administrative?
 
-- [ ] Add three animal types with size, weight, and temperament traits.
-- [ ] Add vehicle capacity.
-- [ ] Add one incompatibility rule.
-- [ ] Add a divided cage that resolves the incompatibility.
-- [ ] Add one equipment requirement from nets, leashes, gloves, feed, or ramp.
-- [ ] Add a basic mission preparation screen.
-- [ ] Build five short levels.
+- [x] Add three animal types with size, weight, and temperament traits.
+- [x] Add vehicle capacity.
+- [x] Add one incompatibility rule.
+- [x] Add a divided cage that resolves the incompatibility.
+- [x] Add one equipment requirement from nets, leashes, gloves, feed, or ramp.
+- [x] Add a basic mission preparation screen.
+- [x] Build five short levels.
 
 ## Gate 4 — Progression slice
 
