@@ -9,6 +9,7 @@ const OK_GREEN := Color("#2f7d4f")
 const WARN_RED := Color("#b4472e")
 
 var level := {}
+var capacity := 0
 var loaded := {}       # animal_id -> bool
 var equipped := {}     # equipment_id -> bool
 
@@ -57,9 +58,13 @@ func _build_prep() -> void:
 	for eq in level["equipment"]:
 		equipped[eq] = false
 
+	var veh: Dictionary = Vehicles.get_data(level["vehicle"])
+	capacity = int(veh["capacity"])
+
 	var column := _make_root_column()
 	_add_label(column, level["title"], 34)
 	_add_label(column, level["brief"], 22)
+	_add_label(column, "Vehicle: %s  ·  %d slots  ·  top speed %d" % [veh["name"], capacity, int(veh["max_speed"])], 20)
 	capacity_label = _add_label(column, "", 22)
 	_add_label(column, "Heavier cargo drinks more fuel — the mid-route pickup matters.", 17)
 
@@ -174,8 +179,8 @@ func _validate() -> Dictionary:
 	var size := 0
 	for id in animals:
 		size += int(Animals.get_data(id)["size"])
-	if size > int(level["capacity"]):
-		return {"ok": false, "reason": "Over capacity: %d / %d." % [size, level["capacity"]]}
+	if size > capacity:
+		return {"ok": false, "reason": "Over capacity: %d / %d." % [size, capacity]}
 
 	for id in animals:
 		for other in Animals.get_data(id).get("incompatible", []):
@@ -196,7 +201,7 @@ func _refresh() -> void:
 	for id in _loaded_animals():
 		size += int(Animals.get_data(id)["size"])
 		weight += int(Animals.get_data(id)["weight"])
-	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, level["capacity"], weight]
+	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, capacity, weight]
 
 	var result := _validate()
 	status_label.text = result["reason"]

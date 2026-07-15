@@ -3,12 +3,8 @@ extends Control
 const TRACK_LENGTH := 2200.0
 const FUEL_PICKUP_X := 1050.0
 const FINISH_X := 2050.0
-const MAX_SPEED := 260.0
-const ACCELERATION := 150.0
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
-const FUEL_PER_PX := 0.012          # fuel burned per pixel travelled at zero load
-const START_FUEL := 55.0
 const FUEL_PICKUP_AMOUNT := 45.0
 const REST_HEIGHT := 25.0
 const SUSPENSION_STIFFNESS := 90.0
@@ -49,6 +45,11 @@ var passenger_state := "content"
 var passengers: Array[String] = []
 var load_factor := 0.5
 var has_cage := false
+var vehicle_data := {}
+var veh_max_speed := 260.0
+var veh_accel := 150.0
+var veh_start_fuel := 55.0
+var veh_fuel_per_px := 0.012
 var is_loaded := false
 var loading := false
 var load_t := 0.0
@@ -85,8 +86,8 @@ func _process(delta: float) -> void:
 		return
 
 	if driving and fuel > 0.0:
-		var accel := ACCELERATION * (1.0 - load_factor * ACCEL_MASS_PENALTY)
-		speed = min(speed + accel * delta, MAX_SPEED)
+		var accel := veh_accel * (1.0 - load_factor * ACCEL_MASS_PENALTY)
+		speed = min(speed + accel * delta, veh_max_speed)
 	elif braking:
 		speed = max(speed - BRAKING * delta, 0.0)
 	else:
@@ -99,7 +100,7 @@ func _process(delta: float) -> void:
 	# Fuel is a range meter: distance travelled burns fuel, and a heavier load
 	# burns more per pixel. Speed is a comfort concern, not a fuel one.
 	var dist := speed * delta
-	fuel = max(fuel - FUEL_PER_PX * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
+	fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
 	vehicle_x = min(vehicle_x + dist, TRACK_LENGTH)
 
 	if not fuel_collected and abs(vehicle_x - FUEL_PICKUP_X) < 42.0:
@@ -250,19 +251,26 @@ func _draw_vehicle(camera_x: float) -> void:
 	var angle := atan2(slope, 36.0)
 	var ground_y := terrain_y(vehicle_x)
 
+	var bw: float = vehicle_data.get("body_w", 96.0)
+	var bh: float = vehicle_data.get("body_h", 32.0)
+	var wr: float = vehicle_data.get("wheel_r", 16.0)
+	var wdx: float = vehicle_data.get("wheel_dx", 30.0)
+	var body_col := Color(vehicle_data.get("colour", "#d9824b"))
+	var body_top := 4.0 - bh
+
 	# Wheels stay planted on the ground and follow the slope.
-	draw_set_transform(Vector2(x, ground_y - 11.0), angle, Vector2.ONE)
-	draw_circle(Vector2(-30, 0), 16, Color("#30352f"))
-	draw_circle(Vector2(32, 0), 16, Color("#30352f"))
-	draw_circle(Vector2(-30, 0), 7, Color("#b8b6a8"))
-	draw_circle(Vector2(32, 0), 7, Color("#b8b6a8"))
+	draw_set_transform(Vector2(x, ground_y - wr * 0.7), angle, Vector2.ONE)
+	draw_circle(Vector2(-wdx, 0), wr, Color("#30352f"))
+	draw_circle(Vector2(wdx, 0), wr, Color("#30352f"))
+	draw_circle(Vector2(-wdx, 0), wr * 0.44, Color("#b8b6a8"))
+	draw_circle(Vector2(wdx, 0), wr * 0.44, Color("#b8b6a8"))
 
 	# Body rides on the suspension, bobbing relative to the wheels.
 	draw_set_transform(Vector2(x, body_y), angle, Vector2.ONE)
-	draw_rect(Rect2(-48, -28, 96, 32), Color("#d9824b"), true)
-	draw_rect(Rect2(-22, -52, 43, 25), Color("#f2d7a8"), true)
+	draw_rect(Rect2(-bw * 0.5, body_top, bw, bh), body_col, true)
+	draw_rect(Rect2(-bw * 0.23, body_top - 24.0, bw * 0.45, 25.0), Color("#f2d7a8"), true)
 	_draw_passenger(_passenger_load_offset())
-	draw_rect(Rect2(24, -43, 32, 38), Color("#596b52"), false, 5.0)
+	draw_rect(Rect2(bw * 0.25, body_top - 15.0, bw * 0.33, bh + 6.0), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	if loading:
@@ -290,17 +298,23 @@ func _draw_passenger(y_offset: float) -> void:
 	var n := passengers.size()
 	if n == 0:
 		return
+	var bw: float = vehicle_data.get("body_w", 96.0)
+	var bh: float = vehicle_data.get("body_h", 32.0)
+	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
 	if n == 1:
-		_draw_critter(Vector2(-1.0, -40.0) + off, 13.0, _fur(passengers[0]))
+		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, _fur(passengers[0]))
 		return
+	var left := -bw * 0.34
+	var right := bw * 0.13
+	var r := clampf(bh * 0.34, 8.0, 13.0)
 	for i in n:
-		var fx := lerpf(-32.0, 12.0, float(i) / float(n - 1))
-		_draw_critter(Vector2(fx, -38.0) + off, 11.0, _fur(passengers[i]))
+		var fx := lerpf(left, right, float(i) / float(n - 1))
+		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, _fur(passengers[i]))
 	if has_cage:
 		# A divider bar between the animals — the divided cage keeping the peace.
-		var bar_x := lerpf(-32.0, 12.0, 0.5)
-		draw_line(Vector2(bar_x, -50.0) + off, Vector2(bar_x, -22.0) + off, Color("#4a4f45"), 3.0)
+		var bar_x := lerpf(left, right, 0.5)
+		draw_line(Vector2(bar_x, body_top - 22.0) + off, Vector2(bar_x, body_top + 6.0) + off, Color("#4a4f45"), 3.0)
 
 
 func _fur(id: String) -> Color:
@@ -373,9 +387,14 @@ func _reset_run() -> void:
 	passengers = GameState.loadout_animals.duplicate()
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
+	vehicle_data = Vehicles.get_data(GameState.current_vehicle())
+	veh_max_speed = vehicle_data["max_speed"]
+	veh_accel = vehicle_data["acceleration"]
+	veh_start_fuel = vehicle_data["start_fuel"]
+	veh_fuel_per_px = vehicle_data["fuel_per_px"]
 	vehicle_x = 100.0
 	speed = 0.0
-	fuel = START_FUEL
+	fuel = veh_start_fuel
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
 	body_vy = 0.0
 	comfort = COMFORT_MAX
@@ -389,6 +408,6 @@ func _reset_run() -> void:
 	brake_pressed = false
 	fuel_collected = false
 	finished = false
-	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(START_FUEL)
-	message_label.text = "Press DRIVE to coax %s aboard." % _crew_label()
+	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)
+	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]
 	queue_redraw()

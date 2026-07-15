@@ -3,9 +3,6 @@ extends Node
 # Autoloaded singleton. Carries the current level and the loadout chosen on the
 # prep screen into the driving scene, and tracks how far the player has reached.
 
-# Weight (animals + gear) that counts as a fully-laden vehicle, mapped to a 0..1
-# handling load. Tuned so the wombat alone is a noticeable but manageable load.
-const LOAD_REFERENCE := 42.0
 const EQUIPMENT_WEIGHT := {
 	"divided_cage": 8.0,
 	"gloves": 0.0,
@@ -29,6 +26,10 @@ func set_loadout(animals: Array[String], equipment: Array[String]) -> void:
 	loadout_equipment = equipment.duplicate()
 
 
+func current_vehicle() -> String:
+	return Levels.get_level(current_level).get("vehicle", "jeep")
+
+
 func total_weight() -> float:
 	var w := 0.0
 	for id in loadout_animals:
@@ -39,8 +40,10 @@ func total_weight() -> float:
 
 
 func load_factor() -> float:
-	# 0 = empty, 1 = at the reference load. Clamped so overload still tops out.
-	return clampf(total_weight() / LOAD_REFERENCE, 0.0, 1.0)
+	# 0 = empty, 1 = at the current vehicle's reference load. A truck shrugs off a
+	# load that would overwhelm the trike, because its reference is much higher.
+	var load_ref: float = Vehicles.get_data(current_vehicle()).get("load_ref", 42.0)
+	return clampf(total_weight() / load_ref, 0.0, 1.0)
 
 
 func has_more_levels() -> bool:

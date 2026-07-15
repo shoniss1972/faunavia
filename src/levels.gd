@@ -9,36 +9,36 @@ extends RefCounted
 #   4. fox + rabbit — incompatibility; needs a divided cage (and still gloves)
 #   5. all three — combines capacity, the cage, and gloves
 #
-#   capacity  — total animal size the vehicle can hold
+#   vehicle   — which vehicle runs this level; its capacity holds the cargo
 #   deliver   — animal ids that must be aboard to depart (the mission cargo)
 #   equipment — gear the player may add in prep (each id is a toggle)
 const DATA := [
 	{
 		"title": "Level 1 — First Rescue",
-		"capacity": 3, "deliver": ["wombat"], "equipment": [],
-		"brief": "Take the wombat to the sanctuary.",
+		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
+		"brief": "Take the wombat to the sanctuary on the cargo trike.",
 	},
 	{
 		"title": "Level 2 — Two Aboard",
-		"capacity": 3, "deliver": ["wombat", "rabbit"], "equipment": [],
-		"brief": "The wombat and rabbit both need a lift.",
+		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
+		"brief": "The jeep can carry the wombat and rabbit together.",
 	},
 	{
 		"title": "Level 3 — Handle With Care",
-		"capacity": 2, "deliver": ["fox"], "equipment": ["gloves"],
+		"vehicle": "bicycle", "deliver": ["fox"], "equipment": ["gloves"],
 		"brief": "The fox is sly. Bring gloves before you load it.",
 	},
 	{
 		"title": "Level 4 — Keep the Peace",
-		"capacity": 4, "deliver": ["fox", "rabbit"],
+		"vehicle": "jeep", "deliver": ["fox", "rabbit"],
 		"equipment": ["divided_cage", "gloves"],
 		"brief": "Fox and rabbit together needs a divided cage — and the fox still needs gloves.",
 	},
 	{
 		"title": "Level 5 — Full Load",
-		"capacity": 5, "deliver": ["wombat", "rabbit", "fox"],
+		"vehicle": "truck", "deliver": ["wombat", "rabbit", "fox"],
 		"equipment": ["divided_cage", "gloves"],
-		"brief": "All three, all at once. Pack the right gear.",
+		"brief": "The truck hauls all three at once. Pack the right gear.",
 	},
 ]
 
