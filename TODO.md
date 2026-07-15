@@ -29,7 +29,7 @@
 - [x] Track a simple comfort state based on rough travel.
 - [x] Show at least three reactions: content, annoyed, delighted.
 - [x] Add a humorous loading interaction.
-- [ ] Complete five internal playthroughs and record observations.
+- [x] Complete five internal playthroughs and record observations.
 
 ## Gate 3 — Logistics puzzle
 

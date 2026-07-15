@@ -26,11 +26,11 @@ const LOAD_TIME := 1.4             # seconds the reluctant passenger takes to cl
 # Hard suspension jolts drain it; smooth travel restores it. The value is
 # never shown as a number — it only drives the animal's face and emotes.
 const COMFORT_MAX := 100.0
-const COMFORT_JOLT_THRESHOLD := 42.0   # |body_vy| below this counts as a smooth ride
-const COMFORT_LOSS_RATE := 0.85        # comfort lost per unit of jolt-over-threshold, per second
-const COMFORT_RECOVERY := 15.0         # comfort regained per second on smooth travel
+const COMFORT_JOLT_THRESHOLD := 58.0   # |body_vy| below this counts as a smooth ride
+const COMFORT_LOSS_RATE := 0.7         # comfort lost per unit of jolt-over-threshold, per second
+const COMFORT_RECOVERY := 18.0         # comfort regained per second on smooth travel
 const COMFORT_ANNOYED := 40.0          # at or below this the passenger is annoyed
-const COMFORT_DELIGHTED := 85.0        # at or above this, and moving well, it is delighted
+const COMFORT_DELIGHTED := 80.0        # at or above this, and moving well, it is delighted
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
