@@ -11,65 +11,73 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 
-[node name="Background" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.86, 0.92, 0.84, 1)
-mouse_filter = 2
+[node name="StatusPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 700.0
+offset_bottom = 155.0
 
-[node name="Margin" type="MarginContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 48.0
-offset_top = 72.0
-offset_right = -48.0
-offset_bottom = -72.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Content" type="VBoxContainer" parent="Margin"]
+[node name="Status" type="VBoxContainer" parent="StatusPanel"]
 layout_mode = 2
-theme_override_constants/separation = 28
-alignment = 1
+theme_override_constants/separation = 5
 
-[node name="Title" type="Label" parent="Margin/Content"]
+[node name="Title" type="Label" parent="StatusPanel/Status"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 56
-text = "FAUNAVIA"
+theme_override_font_sizes/font_size = 30
+text = "FAUNAVIA — DRIVING TOY"
 horizontal_alignment = 1
 
-[node name="Subtitle" type="Label" parent="Margin/Content"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "Opinionated animals. Questionable transport choices."
-horizontal_alignment = 1
-autowrap_mode = 2
-
-[node name="StatusLabel" type="Label" parent="Margin/Content"]
+[node name="FuelLabel" type="Label" parent="StatusPanel/Status"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "Loading prototype status..."
+text = "Fuel: 100%"
 horizontal_alignment = 1
-autowrap_mode = 2
 
-[node name="StartButton" type="Button" parent="Margin/Content"]
-custom_minimum_size = Vector2(0, 84)
+[node name="MessageLabel" type="Label" parent="StatusPanel/Status"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "START WITH THE DRIVING TOY"
-
-[node name="Scope" type="Label" parent="Margin/Content"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 19
-text = "Puzzle first | Simulation second | No animal injuries"
+theme_override_font_sizes/font_size = 18
+text = "Reach the sanctuary. Pick up fuel on the way."
 horizontal_alignment = 1
-autowrap_mode = 2
 
-[connection signal="pressed" from="Margin/Content/StartButton" to="." method="_on_start_pressed"]
+[node name="Controls" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -150.0
+offset_right = -24.0
+offset_bottom = -26.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 18
+
+[node name="BrakeButton" type="Button" parent="Controls"]
+custom_minimum_size = Vector2(205, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 25
+text = "BRAKE"
+
+[node name="ResetButton" type="Button" parent="Controls"]
+custom_minimum_size = Vector2(150, 110)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "RESET"
+
+[node name="DriveButton" type="Button" parent="Controls"]
+custom_minimum_size = Vector2(205, 110)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 25
+text = "DRIVE"
+
+[connection signal="button_down" from="Controls/BrakeButton" to="." method="_on_brake_down"]
+[connection signal="button_up" from="Controls/BrakeButton" to="." method="_on_brake_up"]
+[connection signal="pressed" from="Controls/ResetButton" to="." method="_reset_run"]
+[connection signal="button_down" from="Controls/DriveButton" to="." method="_on_drive_down"]
+[connection signal="button_up" from="Controls/DriveButton" to="." method="_on_drive_up"]
