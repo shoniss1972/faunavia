@@ -47,13 +47,13 @@
 
 **Question:** Do players want the next vehicle and mission?
 
-- [ ] Add bicycle, jeep, and truck.
-- [ ] Add one trailer.
-- [ ] Add fuel, food store, vet station, and sanctuary route nodes.
-- [ ] Add stars and level unlocks.
-- [ ] Add six animals total.
-- [ ] Build 10–15 levels.
-- [ ] Add basic save progress.
+- [x] Add bicycle, jeep, and truck.
+- [x] Add one trailer.
+- [x] Add fuel, food store, vet station, and sanctuary route nodes.
+- [x] Add stars and level unlocks.
+- [x] Add six animals total.
+- [x] Build 10–15 levels. (12 levels)
+- [x] Add basic save progress.
 
 ## Gate 5 — External phone test
 
