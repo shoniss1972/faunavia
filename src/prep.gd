@@ -61,17 +61,25 @@ func _build_prep() -> void:
 	_add_label(column, level["title"], 34)
 	_add_label(column, level["brief"], 22)
 	capacity_label = _add_label(column, "", 22)
+	_add_label(column, "Heavier cargo drinks more fuel — the mid-route pickup matters.", 17)
 
 	_add_label(column, "— LOAD THE ANIMALS —", 20)
 	for id in level["deliver"]:
-		var data: Dictionary = Animals.get_data(id)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		var swatch := ColorRect.new()
+		swatch.color = Color(Animals.get_data(id).get("colour", "#7d6f63"))
+		swatch.custom_minimum_size = Vector2(72, 96)
+		row.add_child(swatch)
 		var btn := Button.new()
 		btn.toggle_mode = true
 		btn.custom_minimum_size = Vector2(0, 96)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		btn.add_theme_font_size_override("font_size", 24)
 		btn.text = _animal_button_text(id, false)
 		btn.toggled.connect(_on_animal_toggled.bind(id, btn))
-		column.add_child(btn)
+		row.add_child(btn)
+		column.add_child(row)
 
 	if not level["equipment"].is_empty():
 		_add_label(column, "— PACK EQUIPMENT —", 20)
@@ -184,9 +192,11 @@ func _validate() -> Dictionary:
 
 func _refresh() -> void:
 	var size := 0
+	var weight := 0
 	for id in _loaded_animals():
 		size += int(Animals.get_data(id)["size"])
-	capacity_label.text = "Load: %d / %d" % [size, level["capacity"]]
+		weight += int(Animals.get_data(id)["weight"])
+	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, level["capacity"], weight]
 
 	var result := _validate()
 	status_label.text = result["reason"]
