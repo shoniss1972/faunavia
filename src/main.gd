@@ -12,6 +12,15 @@ const REST_HEIGHT := 25.0
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
 
+# One passenger for now. Mass is a 0..1 dial: 0 is an empty cab, 1 is a
+# vehicle-straining load. It feeds handling, fuel use, and suspension sag
+# so the animal's weight is felt, not just labelled.
+const PASSENGER_NAME := "Wombat"
+const PASSENGER_MASS := 0.5
+const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at mass 1.0
+const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at mass 1.0
+const SAG_PER_MASS := 14.0         # extra pixels the body sags at mass 1.0
+
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
 
@@ -41,8 +50,10 @@ func _process(delta: float) -> void:
 	var braking := brake_pressed or Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A)
 
 	if driving and fuel > 0.0:
-		speed = min(speed + ACCELERATION * delta, MAX_SPEED)
-		fuel = max(fuel - FUEL_DRAIN * delta, 0.0)
+		var accel := ACCELERATION * (1.0 - PASSENGER_MASS * ACCEL_MASS_PENALTY)
+		var drain := FUEL_DRAIN * (1.0 + PASSENGER_MASS * FUEL_MASS_PENALTY)
+		speed = min(speed + accel * delta, MAX_SPEED)
+		fuel = max(fuel - drain * delta, 0.0)
 	elif braking:
 		speed = max(speed - BRAKING * delta, 0.0)
 	else:
@@ -73,7 +84,7 @@ func _process(delta: float) -> void:
 func _update_suspension(delta: float) -> void:
 	# Wheels ride the ground; the body hangs on a damped spring above them,
 	# so terrain bumps and speed produce a settling bob without rigid-body physics.
-	var rest_target := terrain_y(vehicle_x) - REST_HEIGHT
+	var rest_target := terrain_y(vehicle_x) - REST_HEIGHT + PASSENGER_MASS * SAG_PER_MASS
 	var accel := (rest_target - body_y) * SUSPENSION_STIFFNESS - body_vy * SUSPENSION_DAMPING
 	body_vy += accel * delta
 	body_y += body_vy * delta
@@ -138,8 +149,22 @@ func _draw_vehicle(camera_x: float) -> void:
 	draw_set_transform(Vector2(x, body_y), angle, Vector2.ONE)
 	draw_rect(Rect2(-48, -28, 96, 32), Color("#d9824b"), true)
 	draw_rect(Rect2(-22, -52, 43, 25), Color("#f2d7a8"), true)
+	_draw_passenger()
 	draw_rect(Rect2(24, -43, 32, 38), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_passenger() -> void:
+	# A simple critter peeking out of the cab window. Drawn in body space,
+	# so it rides and sags with the suspension. Purely a reaction/visual layer.
+	var fur := Color("#7d6f63")
+	var dark := Color("#2c2620")
+	draw_circle(Vector2(-11, -50), 5, fur)
+	draw_circle(Vector2(9, -50), 5, fur)
+	draw_circle(Vector2(-1, -40), 13, fur)
+	draw_circle(Vector2(-6, -42), 2.0, dark)
+	draw_circle(Vector2(4, -42), 2.0, dark)
+	draw_circle(Vector2(-1, -35), 3.0, dark)
 
 
 func _on_drive_down() -> void:
@@ -169,5 +194,5 @@ func _reset_run() -> void:
 	fuel_collected = false
 	finished = false
 	fuel_label.text = "Fuel: 62%   Speed: 0"
-	message_label.text = "Reach the sanctuary. Pick up fuel on the way."
+	message_label.text = "%s aboard. Reach the sanctuary — mind the fuel." % PASSENGER_NAME
 	queue_redraw()

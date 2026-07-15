@@ -24,8 +24,8 @@
 
 **Question:** Does carrying an expressive animal materially improve the driving loop?
 
-- [ ] Add one animal passenger.
-- [ ] Add animal weight to vehicle handling.
+- [x] Add one animal passenger.
+- [x] Add animal weight to vehicle handling.
 - [ ] Track a simple comfort state based on rough travel.
 - [ ] Show at least three reactions: content, annoyed, delighted.
 - [ ] Add a humorous loading interaction.
