@@ -10,6 +10,7 @@ const WARN_RED := Color("#b4472e")
 
 var level := {}
 var capacity := 0
+var trailer_attached := false
 var loaded := {}       # animal_id -> bool
 var equipped := {}     # equipment_id -> bool
 
@@ -53,6 +54,7 @@ func _add_label(parent: Node, text: String, size: int, align := HORIZONTAL_ALIGN
 func _build_prep() -> void:
 	loaded.clear()
 	equipped.clear()
+	trailer_attached = false
 	for id in level["deliver"]:
 		loaded[id] = false
 	for eq in level["equipment"]:
@@ -96,6 +98,16 @@ func _build_prep() -> void:
 			btn.text = _equip_button_text(eq, false)
 			btn.toggled.connect(_on_equip_toggled.bind(eq, btn))
 			column.add_child(btn)
+
+	if level.get("trailer", false):
+		_add_label(column, "— HITCH A TRAILER —", 20)
+		var tbtn := Button.new()
+		tbtn.toggle_mode = true
+		tbtn.custom_minimum_size = Vector2(0, 88)
+		tbtn.add_theme_font_size_override("font_size", 24)
+		tbtn.text = _trailer_button_text(false)
+		tbtn.toggled.connect(_on_trailer_toggled.bind(tbtn))
+		column.add_child(tbtn)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -141,6 +153,11 @@ func _equip_button_text(eq: String, is_on: bool) -> String:
 	return "%s%s" % [mark, Levels.equipment_name(eq)]
 
 
+func _trailer_button_text(is_on: bool) -> String:
+	var mark := "[✓] " if is_on else "[  ] "
+	return "%sTrailer  ·  +%d slots" % [mark, GameState.TRAILER_CAPACITY]
+
+
 func _on_animal_toggled(pressed: bool, id: String, btn: Button) -> void:
 	loaded[id] = pressed
 	btn.text = _animal_button_text(id, pressed)
@@ -151,6 +168,16 @@ func _on_equip_toggled(pressed: bool, eq: String, btn: Button) -> void:
 	equipped[eq] = pressed
 	btn.text = _equip_button_text(eq, pressed)
 	_refresh()
+
+
+func _on_trailer_toggled(pressed: bool, btn: Button) -> void:
+	trailer_attached = pressed
+	btn.text = _trailer_button_text(pressed)
+	_refresh()
+
+
+func _effective_capacity() -> int:
+	return capacity + (GameState.TRAILER_CAPACITY if trailer_attached else 0)
 
 
 func _loaded_animals() -> Array[String]:
@@ -179,8 +206,8 @@ func _validate() -> Dictionary:
 	var size := 0
 	for id in animals:
 		size += int(Animals.get_data(id)["size"])
-	if size > capacity:
-		return {"ok": false, "reason": "Over capacity: %d / %d." % [size, capacity]}
+	if size > _effective_capacity():
+		return {"ok": false, "reason": "Over capacity: %d / %d — try a trailer." % [size, _effective_capacity()]}
 
 	for id in animals:
 		for other in Animals.get_data(id).get("incompatible", []):
@@ -203,7 +230,7 @@ func _refresh() -> void:
 	for id in _loaded_animals():
 		size += int(Animals.get_data(id)["size"])
 		weight += int(Animals.get_data(id)["weight"])
-	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, capacity, weight]
+	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, _effective_capacity(), weight]
 
 	var result := _validate()
 	status_label.text = result["reason"]
@@ -212,7 +239,7 @@ func _refresh() -> void:
 
 
 func _on_depart() -> void:
-	GameState.set_loadout(_loaded_animals(), _equipped_gear())
+	GameState.set_loadout(_loaded_animals(), _equipped_gear(), trailer_attached)
 	get_tree().change_scene_to_file("res://src/main.tscn")
 
 

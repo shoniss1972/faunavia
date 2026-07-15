@@ -37,7 +37,7 @@ const DATA := [
 	{
 		"title": "Level 5 — Full Load",
 		"vehicle": "truck", "deliver": ["wombat", "rabbit", "fox"],
-		"equipment": ["divided_cage", "gloves"],
+		"equipment": ["divided_cage", "gloves"], "trailer": true,
 		"brief": "The truck hauls all three at once. Pack the right gear.",
 	},
 ]

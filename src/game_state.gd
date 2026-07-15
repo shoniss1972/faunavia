@@ -9,10 +9,13 @@ const EQUIPMENT_WEIGHT := {
 	"ramp": 6.0,
 	"leash": 0.0,
 }
+const TRAILER_CAPACITY := 3        # extra slots a trailer adds
+const TRAILER_WEIGHT := 12.0       # the trailer's own handling weight
 
 var current_level := 0
 var loadout_animals: Array[String] = []
 var loadout_equipment: Array[String] = []
+var loadout_trailer := false
 var campaign_done := false
 
 
@@ -23,9 +26,10 @@ func _ready() -> void:
 		loadout_animals = ["wombat"]
 
 
-func set_loadout(animals: Array[String], equipment: Array[String]) -> void:
+func set_loadout(animals: Array[String], equipment: Array[String], trailer := false) -> void:
 	loadout_animals = animals.duplicate()
 	loadout_equipment = equipment.duplicate()
+	loadout_trailer = trailer
 
 
 func current_vehicle() -> String:
@@ -38,6 +42,8 @@ func total_weight() -> float:
 		w += float(Animals.get_data(id).get("weight", 0.0))
 	for eq in loadout_equipment:
 		w += EQUIPMENT_WEIGHT.get(eq, 0.0)
+	if loadout_trailer:
+		w += TRAILER_WEIGHT
 	return w
 
 
@@ -61,4 +67,5 @@ func restart() -> void:
 	current_level = 0
 	loadout_animals = ["wombat"]
 	loadout_equipment = []
+	loadout_trailer = false
 	campaign_done = false

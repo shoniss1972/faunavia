@@ -59,6 +59,7 @@ var passenger_state := "content"
 var passengers: Array[String] = []
 var load_factor := 0.5
 var has_cage := false
+var has_trailer := false
 var vehicle_data := {}
 var veh_max_speed := 260.0
 var veh_accel := 150.0
@@ -265,6 +266,7 @@ func _draw() -> void:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
 		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
 		_draw_marker(node["x"], camera_x, style["label"], Color(style["colour"]), still_visible)
+	_draw_trailer(camera_x)
 	_draw_vehicle(camera_x)
 
 
@@ -278,6 +280,28 @@ func _draw_marker(world_x: float, camera_x: float, label_text: String, marker_co
 	draw_line(Vector2(x, y), Vector2(x, y - 110), Color("#3d4b38"), 7.0)
 	draw_rect(Rect2(x - 45, y - 145, 90, 42), marker_color, true)
 	draw_string(ThemeDB.fallback_font, Vector2(x - 38, y - 117), label_text, HORIZONTAL_ALIGNMENT_CENTER, 76, 15, Color("#263127"))
+
+
+func _draw_trailer(camera_x: float) -> void:
+	if not has_trailer:
+		return
+	var bw: float = vehicle_data.get("body_w", 96.0)
+	var tx_world := vehicle_x - (bw * 0.5 + 42.0)
+	var tx := tx_world - camera_x
+	var ground := terrain_y(tx_world)
+	var slope := terrain_y(tx_world + 16.0) - terrain_y(tx_world - 16.0)
+	var angle := atan2(slope, 32.0)
+
+	# A short hitch bar from the trailer up to the vehicle's rear.
+	draw_line(Vector2(tx + 26.0, ground - 16.0), Vector2((vehicle_x - camera_x) - bw * 0.5, body_y - 6.0), Color("#4a4f45"), 3.0)
+
+	# Wheel on the ground, box riding above it.
+	draw_set_transform(Vector2(tx, ground - 10.0), angle, Vector2.ONE)
+	draw_circle(Vector2(0, 0), 12, Color("#30352f"))
+	draw_circle(Vector2(0, 0), 5, Color("#b8b6a8"))
+	draw_set_transform(Vector2(tx, ground - 24.0), angle, Vector2.ONE)
+	draw_rect(Rect2(-26, -22, 52, 26), Color("#9a8b76"), true)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _draw_vehicle(camera_x: float) -> void:
@@ -422,6 +446,7 @@ func _reset_run() -> void:
 	passengers = GameState.loadout_animals.duplicate()
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
+	has_trailer = GameState.loadout_trailer
 	vehicle_data = Vehicles.get_data(GameState.current_vehicle())
 	veh_max_speed = vehicle_data["max_speed"]
 	veh_accel = vehicle_data["acceleration"]
