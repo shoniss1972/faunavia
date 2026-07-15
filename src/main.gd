@@ -1,12 +1,25 @@
 extends Control
 
 const TRACK_LENGTH := 2200.0
-const FUEL_PICKUP_X := 1050.0
-const FINISH_X := 2050.0
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FUEL_PICKUP_AMOUNT := 45.0
+const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
+
+# Route stops along the track. Levels may override with their own list; the
+# default is a fuel stop, a food store, and the sanctuary finish.
+const DEFAULT_ROUTE := [
+	{"type": "fuel", "x": 950.0},
+	{"type": "food", "x": 1500.0},
+	{"type": "sanctuary", "x": 2050.0},
+]
+const NODE_STYLE := {
+	"fuel": {"label": "FUEL", "colour": "#efb64d"},
+	"food": {"label": "FOOD", "colour": "#c98a3a"},
+	"vet": {"label": "VET", "colour": "#5a9bd4"},
+	"sanctuary": {"label": "SANCTUARY", "colour": "#6b9c72"},
+}
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
 
@@ -36,7 +49,8 @@ var speed := 0.0
 var fuel := 100.0
 var drive_pressed := false
 var brake_pressed := false
-var fuel_collected := false
+var route: Array = DEFAULT_ROUTE
+var nodes_used := {}
 var finished := false
 var body_y := 0.0
 var body_vy := 0.0
@@ -103,17 +117,7 @@ func _process(delta: float) -> void:
 	fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
 	vehicle_x = min(vehicle_x + dist, TRACK_LENGTH)
 
-	if not fuel_collected and abs(vehicle_x - FUEL_PICKUP_X) < 42.0:
-		fuel_collected = true
-		fuel = min(fuel + FUEL_PICKUP_AMOUNT, 100.0)
-		message_label.text = "Fuel collected. Keep going!"
-
-	if vehicle_x >= FINISH_X:
-		finished = true
-		speed = 0.0
-		passenger_state = "delighted"
-		var tail := "Preparing next mission..." if GameState.has_more_levels() else "That was the last rescue!"
-		message_label.text = "Delivered %s! %s" % [_crew_label(), tail]
+	_check_route_nodes()
 
 	_update_suspension(delta)
 	_update_comfort(delta)
@@ -150,6 +154,35 @@ func _update_comfort(delta: float) -> void:
 		passenger_state = "delighted"
 	else:
 		passenger_state = "content"
+
+
+func _check_route_nodes() -> void:
+	# Apply each route stop as the vehicle reaches it. The sanctuary ends the run;
+	# fuel, food, and vet stops each top up once when passed.
+	for node in route:
+		var nx: float = node["x"]
+		var ntype: String = node["type"]
+		if ntype == "sanctuary":
+			if vehicle_x >= nx and not finished:
+				finished = true
+				speed = 0.0
+				passenger_state = "delighted"
+				var tail := "Preparing next mission..." if GameState.has_more_levels() else "That was the last rescue!"
+				message_label.text = "Delivered %s! %s" % [_crew_label(), tail]
+			continue
+		if nodes_used.has(nx) or absf(vehicle_x - nx) >= 42.0:
+			continue
+		nodes_used[nx] = true
+		match ntype:
+			"fuel":
+				fuel = min(fuel + FUEL_PICKUP_AMOUNT, 100.0)
+				message_label.text = "Fuel collected. Keep going!"
+			"food":
+				comfort = min(comfort + FOOD_COMFORT, COMFORT_MAX)
+				message_label.text = "Fed the crew — spirits lift."
+			"vet":
+				comfort = COMFORT_MAX
+				message_label.text = "Vet check — everyone's calm."
 
 
 func _update_loading(delta: float, drive_requested: bool) -> void:
@@ -228,8 +261,10 @@ func _draw() -> void:
 	ground.append(Vector2(size.x, size.y))
 	draw_colored_polygon(ground, Color("#78945e"))
 
-	_draw_marker(FUEL_PICKUP_X, camera_x, "FUEL", Color("#efb64d"), not fuel_collected)
-	_draw_marker(FINISH_X, camera_x, "SANCTUARY", Color("#6b9c72"), true)
+	for node in route:
+		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
+		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
+		_draw_marker(node["x"], camera_x, style["label"], Color(style["colour"]), still_visible)
 	_draw_vehicle(camera_x)
 
 
@@ -406,7 +441,8 @@ func _reset_run() -> void:
 	advancing = false
 	drive_pressed = false
 	brake_pressed = false
-	fuel_collected = false
+	route = Levels.get_level(GameState.current_level).get("route", DEFAULT_ROUTE)
+	nodes_used = {}
 	finished = false
 	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)
 	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]
