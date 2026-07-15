@@ -12,15 +12,13 @@ const REST_HEIGHT := 25.0
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
 
-# One passenger for now. Mass is a 0..1 dial: 0 is an empty cab, 1 is a
-# vehicle-straining load. It feeds handling, fuel use, and suspension sag
-# so the animal's weight is felt, not just labelled.
-const PASSENGER_NAME := "Wombat"
-const PASSENGER_MASS := 0.5
-const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at mass 1.0
-const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at mass 1.0
-const SAG_PER_MASS := 14.0         # extra pixels the body sags at mass 1.0
-const LOAD_TIME := 1.4             # seconds the reluctant passenger takes to clamber aboard
+# The passengers ride from the prepared loadout. Their combined weight, as a
+# 0..1 load factor from GameState, feeds handling, fuel use, and suspension sag
+# so the cargo is felt, not just labelled.
+const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at load 1.0
+const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at load 1.0
+const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
+const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
 # Comfort is a 0..100 mood the passenger builds from how the ride feels.
 # Hard suspension jolts drain it; smooth travel restores it. The value is
@@ -46,6 +44,8 @@ var body_y := 0.0
 var body_vy := 0.0
 var comfort := COMFORT_MAX
 var passenger_state := "content"
+var passengers: Array[String] = []
+var load_factor := 0.5
 var is_loaded := false
 var loading := false
 var load_t := 0.0
@@ -72,8 +72,8 @@ func _process(delta: float) -> void:
 		return
 
 	if driving and fuel > 0.0:
-		var accel := ACCELERATION * (1.0 - PASSENGER_MASS * ACCEL_MASS_PENALTY)
-		var drain := FUEL_DRAIN * (1.0 + PASSENGER_MASS * FUEL_MASS_PENALTY)
+		var accel := ACCELERATION * (1.0 - load_factor * ACCEL_MASS_PENALTY)
+		var drain := FUEL_DRAIN * (1.0 + load_factor * FUEL_MASS_PENALTY)
 		speed = min(speed + accel * delta, MAX_SPEED)
 		fuel = max(fuel - drain * delta, 0.0)
 	elif braking:
@@ -96,7 +96,7 @@ func _process(delta: float) -> void:
 		finished = true
 		speed = 0.0
 		passenger_state = "delighted"
-		message_label.text = "%s made it to the sanctuary, thrilled!" % PASSENGER_NAME
+		message_label.text = "Delivered %s to the sanctuary!" % _crew_label()
 
 	_update_suspension(delta)
 	_update_comfort(delta)
@@ -133,11 +133,17 @@ func _update_loading(delta: float, drive_requested: bool) -> void:
 			loading = false
 			is_loaded = true
 			passenger_state = "content"
-			message_label.text = "%s aboard! Reach the sanctuary — mind the fuel." % PASSENGER_NAME
+			message_label.text = "%s aboard! Reach the sanctuary — mind the fuel." % _crew_label().capitalize()
 	elif drive_requested:
 		loading = true
 		load_t = 0.0
-		message_label.text = "Coaxing %s aboard..." % PASSENGER_NAME
+		message_label.text = "Coaxing %s aboard..." % _crew_label()
+
+
+func _crew_label() -> String:
+	if passengers.size() == 1:
+		return Animals.display_name(passengers[0])
+	return "the crew"
 
 
 func _load_line() -> String:
@@ -152,7 +158,7 @@ func _load_line() -> String:
 func _update_suspension(delta: float) -> void:
 	# Wheels ride the ground; the body hangs on a damped spring above them,
 	# so terrain bumps and speed produce a settling bob without rigid-body physics.
-	var rest_target := terrain_y(vehicle_x) - REST_HEIGHT + PASSENGER_MASS * SAG_PER_MASS
+	var rest_target := terrain_y(vehicle_x) - REST_HEIGHT + load_factor * SAG_PER_MASS
 	var accel := (rest_target - body_y) * SUSPENSION_STIFFNESS - body_vy * SUSPENSION_DAMPING
 	body_vy += accel * delta
 	body_y += body_vy * delta
@@ -239,35 +245,53 @@ func _passenger_load_offset() -> float:
 
 
 func _draw_passenger(y_offset: float) -> void:
-	# A simple critter peeking out of the cab window. Drawn in body space,
-	# so it rides and sags with the suspension. Its face acts out the current
-	# comfort mood: content, annoyed, or delighted. y_offset drops it down into
-	# the seat during the boarding animation.
+	# The loaded animals ride in the cab, drawn in body space so they bob and
+	# sag with the suspension. y_offset drops them into their seats during the
+	# boarding animation. A single passenger sits high in the cab window; a crew
+	# spreads across the bed.
+	var n := passengers.size()
+	if n == 0:
+		return
 	var off := Vector2(0.0, y_offset)
-	var fur := Color("#7d6f63")
+	if n == 1:
+		_draw_critter(Vector2(-1.0, -40.0) + off, 13.0, _fur(passengers[0]))
+		return
+	for i in n:
+		var fx := lerpf(-32.0, 12.0, float(i) / float(n - 1))
+		_draw_critter(Vector2(fx, -38.0) + off, 11.0, _fur(passengers[i]))
+
+
+func _fur(id: String) -> Color:
+	return Color(Animals.get_data(id).get("colour", "#7d6f63"))
+
+
+func _draw_critter(center: Vector2, radius: float, colour: Color) -> void:
+	# One animal head with ears and a mood-driven face. All feature offsets are
+	# scaled from the reference radius so crews of smaller heads stay proportioned.
+	var s := radius / 13.0
 	var dark := Color("#2c2620")
-	draw_circle(Vector2(-11, -50) + off, 5, fur)
-	draw_circle(Vector2(9, -50) + off, 5, fur)
-	draw_circle(Vector2(-1, -40) + off, 13, fur)
+	draw_circle(center + Vector2(-10, -10) * s, 5.0 * s, colour)
+	draw_circle(center + Vector2(10, -10) * s, 5.0 * s, colour)
+	draw_circle(center, radius, colour)
 
 	match passenger_state:
 		"annoyed":
 			# Furrowed brows sloping in, dot eyes, a flat set mouth.
-			draw_line(Vector2(-9, -47) + off, Vector2(-3, -44) + off, dark, 1.6)
-			draw_line(Vector2(6, -47) + off, Vector2(0, -44) + off, dark, 1.6)
-			draw_circle(Vector2(-6, -42) + off, 2.0, dark)
-			draw_circle(Vector2(3, -42) + off, 2.0, dark)
-			draw_line(Vector2(-4, -33) + off, Vector2(2, -33) + off, dark, 1.6)
+			draw_line(center + Vector2(-8, -7) * s, center + Vector2(-2, -4) * s, dark, 1.6)
+			draw_line(center + Vector2(7, -7) * s, center + Vector2(1, -4) * s, dark, 1.6)
+			draw_circle(center + Vector2(-5, -2) * s, 2.0 * s, dark)
+			draw_circle(center + Vector2(4, -2) * s, 2.0 * s, dark)
+			draw_line(center + Vector2(-3, 7) * s, center + Vector2(3, 7) * s, dark, 1.6)
 		"delighted":
 			# Squinting happy eyes and a wide open grin.
-			draw_arc(Vector2(-6, -42) + off, 3.0, 0.0, PI, 6, dark, 2.0)
-			draw_arc(Vector2(3, -42) + off, 3.0, 0.0, PI, 6, dark, 2.0)
-			draw_arc(Vector2(-1, -36) + off, 4.0, 0.0, PI, 8, dark, 2.0)
+			draw_arc(center + Vector2(-5, -2) * s, 3.0 * s, 0.0, PI, 6, dark, 2.0)
+			draw_arc(center + Vector2(4, -2) * s, 3.0 * s, 0.0, PI, 6, dark, 2.0)
+			draw_arc(center + Vector2(0, 4) * s, 4.0 * s, 0.0, PI, 8, dark, 2.0)
 		_:
 			# Content: calm dot eyes and a small nose.
-			draw_circle(Vector2(-6, -42) + off, 2.0, dark)
-			draw_circle(Vector2(4, -42) + off, 2.0, dark)
-			draw_circle(Vector2(-1, -35) + off, 3.0, dark)
+			draw_circle(center + Vector2(-5, -2) * s, 2.0 * s, dark)
+			draw_circle(center + Vector2(5, -2) * s, 2.0 * s, dark)
+			draw_circle(center + Vector2(0, 5) * s, 3.0 * s, dark)
 
 
 func _draw_emote(screen_x: float, top_y: float) -> void:
@@ -304,6 +328,8 @@ func _on_brake_up() -> void:
 
 
 func _reset_run() -> void:
+	passengers = GameState.loadout_animals.duplicate()
+	load_factor = GameState.load_factor()
 	vehicle_x = 100.0
 	speed = 0.0
 	fuel = 62.0
@@ -319,5 +345,5 @@ func _reset_run() -> void:
 	fuel_collected = false
 	finished = false
 	fuel_label.text = "Fuel: 62%   Speed: 0"
-	message_label.text = "Press DRIVE to coax %s aboard." % PASSENGER_NAME
+	message_label.text = "Press DRIVE to coax %s aboard." % _crew_label()
 	queue_redraw()
