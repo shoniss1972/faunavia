@@ -20,6 +20,7 @@ const PASSENGER_MASS := 0.5
 const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at mass 1.0
 const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at mass 1.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at mass 1.0
+const LOAD_TIME := 1.4             # seconds the reluctant passenger takes to clamber aboard
 
 # Comfort is a 0..100 mood the passenger builds from how the ride feels.
 # Hard suspension jolts drain it; smooth travel restores it. The value is
@@ -45,6 +46,9 @@ var body_y := 0.0
 var body_vy := 0.0
 var comfort := COMFORT_MAX
 var passenger_state := "content"
+var is_loaded := false
+var loading := false
+var load_t := 0.0
 
 
 func _ready() -> void:
@@ -60,6 +64,12 @@ func _process(delta: float) -> void:
 
 	var driving := drive_pressed or Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D)
 	var braking := brake_pressed or Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A)
+
+	if not is_loaded:
+		_update_loading(delta, driving)
+		_update_suspension(delta)
+		queue_redraw()
+		return
 
 	if driving and fuel > 0.0:
 		var accel := ACCELERATION * (1.0 - PASSENGER_MASS * ACCEL_MASS_PENALTY)
@@ -112,6 +122,31 @@ func _update_comfort(delta: float) -> void:
 		passenger_state = "delighted"
 	else:
 		passenger_state = "content"
+
+
+func _update_loading(delta: float, drive_requested: bool) -> void:
+	# The run does not begin until the passenger is aboard. The first drive
+	# request coaxes the reluctant animal, who grumbles its way in over a beat.
+	if loading:
+		load_t += delta
+		if load_t >= LOAD_TIME:
+			loading = false
+			is_loaded = true
+			passenger_state = "content"
+			message_label.text = "%s aboard! Reach the sanctuary — mind the fuel." % PASSENGER_NAME
+	elif drive_requested:
+		loading = true
+		load_t = 0.0
+		message_label.text = "Coaxing %s aboard..." % PASSENGER_NAME
+
+
+func _load_line() -> String:
+	# The passenger's grumbling, timed to the clamber-in animation.
+	if load_t < LOAD_TIME * 0.34:
+		return "Do I have to?"
+	elif load_t < LOAD_TIME * 0.68:
+		return "Ugh, fine..."
+	return "...oof, in!"
 
 
 func _update_suspension(delta: float) -> void:
@@ -182,41 +217,57 @@ func _draw_vehicle(camera_x: float) -> void:
 	draw_set_transform(Vector2(x, body_y), angle, Vector2.ONE)
 	draw_rect(Rect2(-48, -28, 96, 32), Color("#d9824b"), true)
 	draw_rect(Rect2(-22, -52, 43, 25), Color("#f2d7a8"), true)
-	_draw_passenger()
+	_draw_passenger(_passenger_load_offset())
 	draw_rect(Rect2(24, -43, 32, 38), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	_draw_emote(x, body_y - 58.0)
+	if loading:
+		draw_string(ThemeDB.fallback_font, Vector2(x - 45.0, body_y - 58.0), _load_line(), HORIZONTAL_ALIGNMENT_CENTER, 90.0, 18, Color("#8a5a2b"))
+	elif is_loaded:
+		_draw_emote(x, body_y - 58.0)
 
 
-func _draw_passenger() -> void:
+func _passenger_load_offset() -> float:
+	# How far below its seat the passenger sits while boarding. It starts low,
+	# mostly hidden behind the cab, then clambers up to zero as loading finishes.
+	if is_loaded:
+		return 0.0
+	if loading:
+		var p := clampf(load_t / LOAD_TIME, 0.0, 1.0)
+		return pow(1.0 - p, 3) * 26.0
+	return 26.0
+
+
+func _draw_passenger(y_offset: float) -> void:
 	# A simple critter peeking out of the cab window. Drawn in body space,
 	# so it rides and sags with the suspension. Its face acts out the current
-	# comfort mood: content, annoyed, or delighted.
+	# comfort mood: content, annoyed, or delighted. y_offset drops it down into
+	# the seat during the boarding animation.
+	var off := Vector2(0.0, y_offset)
 	var fur := Color("#7d6f63")
 	var dark := Color("#2c2620")
-	draw_circle(Vector2(-11, -50), 5, fur)
-	draw_circle(Vector2(9, -50), 5, fur)
-	draw_circle(Vector2(-1, -40), 13, fur)
+	draw_circle(Vector2(-11, -50) + off, 5, fur)
+	draw_circle(Vector2(9, -50) + off, 5, fur)
+	draw_circle(Vector2(-1, -40) + off, 13, fur)
 
 	match passenger_state:
 		"annoyed":
 			# Furrowed brows sloping in, dot eyes, a flat set mouth.
-			draw_line(Vector2(-9, -47), Vector2(-3, -44), dark, 1.6)
-			draw_line(Vector2(6, -47), Vector2(0, -44), dark, 1.6)
-			draw_circle(Vector2(-6, -42), 2.0, dark)
-			draw_circle(Vector2(3, -42), 2.0, dark)
-			draw_line(Vector2(-4, -33), Vector2(2, -33), dark, 1.6)
+			draw_line(Vector2(-9, -47) + off, Vector2(-3, -44) + off, dark, 1.6)
+			draw_line(Vector2(6, -47) + off, Vector2(0, -44) + off, dark, 1.6)
+			draw_circle(Vector2(-6, -42) + off, 2.0, dark)
+			draw_circle(Vector2(3, -42) + off, 2.0, dark)
+			draw_line(Vector2(-4, -33) + off, Vector2(2, -33) + off, dark, 1.6)
 		"delighted":
 			# Squinting happy eyes and a wide open grin.
-			draw_arc(Vector2(-6, -42), 3.0, 0.0, PI, 6, dark, 2.0)
-			draw_arc(Vector2(3, -42), 3.0, 0.0, PI, 6, dark, 2.0)
-			draw_arc(Vector2(-1, -36), 4.0, 0.0, PI, 8, dark, 2.0)
+			draw_arc(Vector2(-6, -42) + off, 3.0, 0.0, PI, 6, dark, 2.0)
+			draw_arc(Vector2(3, -42) + off, 3.0, 0.0, PI, 6, dark, 2.0)
+			draw_arc(Vector2(-1, -36) + off, 4.0, 0.0, PI, 8, dark, 2.0)
 		_:
 			# Content: calm dot eyes and a small nose.
-			draw_circle(Vector2(-6, -42), 2.0, dark)
-			draw_circle(Vector2(4, -42), 2.0, dark)
-			draw_circle(Vector2(-1, -35), 3.0, dark)
+			draw_circle(Vector2(-6, -42) + off, 2.0, dark)
+			draw_circle(Vector2(4, -42) + off, 2.0, dark)
+			draw_circle(Vector2(-1, -35) + off, 3.0, dark)
 
 
 func _draw_emote(screen_x: float, top_y: float) -> void:
@@ -260,10 +311,13 @@ func _reset_run() -> void:
 	body_vy = 0.0
 	comfort = COMFORT_MAX
 	passenger_state = "content"
+	is_loaded = false
+	loading = false
+	load_t = 0.0
 	drive_pressed = false
 	brake_pressed = false
 	fuel_collected = false
 	finished = false
 	fuel_label.text = "Fuel: 62%   Speed: 0"
-	message_label.text = "%s aboard. Reach the sanctuary — mind the fuel." % PASSENGER_NAME
+	message_label.text = "Press DRIVE to coax %s aboard." % PASSENGER_NAME
 	queue_redraw()
