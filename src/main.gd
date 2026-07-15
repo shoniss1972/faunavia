@@ -27,7 +27,7 @@ const SUSPENSION_DAMPING := 11.0
 # 0..1 load factor from GameState, feeds handling, fuel use, and suspension sag
 # so the cargo is felt, not just labelled.
 const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at load 1.0
-const FUEL_MASS_PENALTY := 3.3     # multiplies fuel burn per pixel at load 1.0
+const FUEL_MASS_PENALTY := 2.4     # multiplies fuel burn per pixel at load 1.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
 const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
@@ -57,6 +57,7 @@ var body_vy := 0.0
 var comfort := COMFORT_MAX
 var passenger_state := "content"
 var ever_annoyed := false
+var ever_delighted := false
 var passengers: Array[String] = []
 var load_factor := 0.5
 var has_cage := false
@@ -155,6 +156,7 @@ func _update_comfort(delta: float) -> void:
 		ever_annoyed = true
 	elif comfort >= COMFORT_DELIGHTED and speed > 120.0:
 		passenger_state = "delighted"
+		ever_delighted = true
 	else:
 		passenger_state = "content"
 
@@ -216,9 +218,9 @@ func _advance_after_delivery() -> void:
 	advancing = true
 	var earned := 1                        # delivered the crew
 	if not ever_annoyed:
-		earned += 1                        # kept every passenger comfortable
-	if fuel >= 25.0:
-		earned += 1                        # arrived with fuel to spare
+		earned += 1                        # never let a passenger get annoyed
+	if ever_delighted:
+		earned += 1                        # thrilled the crew with a smooth, spirited run
 	GameState.record_result(GameState.current_level, earned)
 	get_tree().change_scene_to_file("res://src/level_select.tscn")
 
@@ -464,6 +466,7 @@ func _reset_run() -> void:
 	comfort = COMFORT_MAX
 	passenger_state = "content"
 	ever_annoyed = false
+	ever_delighted = false
 	is_loaded = false
 	loading = false
 	load_t = 0.0

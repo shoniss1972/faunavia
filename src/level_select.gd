@@ -37,6 +37,7 @@ func _build() -> void:
 	_add_label(column, "FAUNAVIA", 38)
 	_add_label(column, "Wildlife Rescue — pick a mission", 20)
 	_add_label(column, "★ %d / %d stars" % [GameState.total_stars(), Levels.count() * 3], 22, STAR_GOLD)
+	_add_label(column, "Stars: deliver · keep them calm · thrill them", 17)
 
 	if GameState.last_earned >= 0:
 		_add_label(column, "Last rescue: %s earned!" % _stars_str(GameState.last_earned), 20, STAR_GOLD)
