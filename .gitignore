@@ -1,0 +1,23 @@
+# Godot
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# Mono / .NET (not used, ignored defensively)
+.mono/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Builds
+build/
+exports/
