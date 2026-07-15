@@ -88,3 +88,26 @@ Passenger: Wombat, mass 0.5. Metrics are % of the run spent in each mood.
 - Remove: nothing.
 - Park, not build yet: fuel as a genuine constraint (lower start / raise drain);
   per-section terrain roughness; a sound or shake on hard jolts.
+
+---
+
+## Polish pass (Gates 1-3) — 2026-07-15
+
+Not a new playtest; addressed findings and parked items recorded above.
+
+- Fuel is now a real constraint (closes the "fuel finished with 55% to spare"
+  finding). Replaced per-second drain with a distance × weight range model so
+  the two tensions stay orthogonal and intuitive: speed jostles the animals
+  (comfort), weight drinks fuel (range). Measured via harness: a light load
+  finishes with ~28% margin; a full three-animal load reaches the mid-route
+  pickup on ~9% and finishes on ~7%, so the pickup is essential and a heavy
+  load that misses it strands. This ties the Gate 3 loadout choice directly to
+  the Gate 1 driving risk.
+- Prep screen made less form-like: colour swatches matching each animal's cab
+  colour, cargo shown as slots + kg, and a hint that heavier cargo needs the
+  pickup — surfacing the loadout/fuel link before departure.
+- Driving HUD: fuel readout warns amber under 30% and red under 15%.
+
+Still parked: reward moment-to-moment easing/braking in comfort; per-section
+terrain roughness; jolt sound/shake. These want a human playtest (Gate 5) to
+justify before building.
