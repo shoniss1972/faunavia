@@ -5,20 +5,20 @@
 - [x] Initialise repository.
 - [x] Add Godot project configuration.
 - [x] Add a runnable placeholder main scene.
-- [ ] Open the project in the current stable standard Godot editor.
-- [ ] Confirm the project runs without warnings or import errors.
-- [ ] Run the placeholder scene on macOS.
+- [x] Open the project in the current stable standard Godot editor.
+- [x] Confirm the project runs without warnings or import errors.
+- [x] Run the placeholder scene on macOS.
 
 ## Gate 1 — Driving toy
 
 **Question:** Is basic traversal readable and satisfying enough to continue?
 
-- [ ] Create one short side-view test route.
-- [ ] Add one simple vehicle with accelerate and brake controls.
-- [ ] Add stable, deliberately simplified wheel and suspension behaviour.
-- [ ] Add fuel consumption and one fuel pickup.
-- [ ] Add a finish point and restart control.
-- [ ] Test keyboard and touch controls.
+- [x] Create one short side-view test route.
+- [x] Add one simple vehicle with accelerate and brake controls.
+- [x] Add stable, deliberately simplified wheel and suspension behaviour.
+- [x] Add fuel consumption and one fuel pickup.
+- [x] Add a finish point and restart control.
+- [ ] Test keyboard and touch controls. (Keyboard verified; touch buttons wired but untested on a device.)
 
 ## Gate 2 — First passenger
 

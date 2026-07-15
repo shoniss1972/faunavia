@@ -8,6 +8,9 @@ const ACCELERATION := 150.0
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FUEL_DRAIN := 5.5
+const REST_HEIGHT := 25.0
+const SUSPENSION_STIFFNESS := 90.0
+const SUSPENSION_DAMPING := 11.0
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
@@ -19,6 +22,8 @@ var drive_pressed := false
 var brake_pressed := false
 var fuel_collected := false
 var finished := false
+var body_y := 0.0
+var body_vy := 0.0
 
 
 func _ready() -> void:
@@ -28,6 +33,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if finished:
+		_update_suspension(delta)
 		queue_redraw()
 		return
 
@@ -58,8 +64,20 @@ func _process(delta: float) -> void:
 		speed = 0.0
 		message_label.text = "Sanctuary reached — driving toy complete!"
 
+	_update_suspension(delta)
+
 	fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
 	queue_redraw()
+
+
+func _update_suspension(delta: float) -> void:
+	# Wheels ride the ground; the body hangs on a damped spring above them,
+	# so terrain bumps and speed produce a settling bob without rigid-body physics.
+	var rest_target := terrain_y(vehicle_x) - REST_HEIGHT
+	var accel := (rest_target - body_y) * SUSPENSION_STIFFNESS - body_vy * SUSPENSION_DAMPING
+	body_vy += accel * delta
+	body_y += body_vy * delta
+	body_y = clamp(body_y, terrain_y(vehicle_x) - 45.0, terrain_y(vehicle_x) - 8.0)
 
 
 func terrain_y(world_x: float) -> float:
@@ -67,7 +85,7 @@ func terrain_y(world_x: float) -> float:
 
 
 func _draw() -> void:
-	var camera_x := clamp(vehicle_x - 220.0, 0.0, TRACK_LENGTH - size.x)
+	var camera_x: float = clamp(vehicle_x - 220.0, 0.0, TRACK_LENGTH - size.x)
 
 	# Sky and distant hills.
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#dcefd8"))
@@ -105,18 +123,22 @@ func _draw_marker(world_x: float, camera_x: float, label_text: String, marker_co
 
 func _draw_vehicle(camera_x: float) -> void:
 	var x := vehicle_x - camera_x
-	var y := terrain_y(vehicle_x) - 25.0
 	var slope := terrain_y(vehicle_x + 18.0) - terrain_y(vehicle_x - 18.0)
 	var angle := atan2(slope, 36.0)
+	var ground_y := terrain_y(vehicle_x)
 
-	draw_set_transform(Vector2(x, y), angle, Vector2.ONE)
+	# Wheels stay planted on the ground and follow the slope.
+	draw_set_transform(Vector2(x, ground_y - 11.0), angle, Vector2.ONE)
+	draw_circle(Vector2(-30, 0), 16, Color("#30352f"))
+	draw_circle(Vector2(32, 0), 16, Color("#30352f"))
+	draw_circle(Vector2(-30, 0), 7, Color("#b8b6a8"))
+	draw_circle(Vector2(32, 0), 7, Color("#b8b6a8"))
+
+	# Body rides on the suspension, bobbing relative to the wheels.
+	draw_set_transform(Vector2(x, body_y), angle, Vector2.ONE)
 	draw_rect(Rect2(-48, -28, 96, 32), Color("#d9824b"), true)
 	draw_rect(Rect2(-22, -52, 43, 25), Color("#f2d7a8"), true)
 	draw_rect(Rect2(24, -43, 32, 38), Color("#596b52"), false, 5.0)
-	draw_circle(Vector2(-30, 11), 16, Color("#30352f"))
-	draw_circle(Vector2(32, 11), 16, Color("#30352f"))
-	draw_circle(Vector2(-30, 11), 7, Color("#b8b6a8"))
-	draw_circle(Vector2(32, 11), 7, Color("#b8b6a8"))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -140,6 +162,8 @@ func _reset_run() -> void:
 	vehicle_x = 100.0
 	speed = 0.0
 	fuel = 62.0
+	body_y = terrain_y(vehicle_x) - REST_HEIGHT
+	body_vy = 0.0
 	drive_pressed = false
 	brake_pressed = false
 	fuel_collected = false
