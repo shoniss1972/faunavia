@@ -26,8 +26,8 @@
 
 - [x] Add one animal passenger.
 - [x] Add animal weight to vehicle handling.
-- [ ] Track a simple comfort state based on rough travel.
-- [ ] Show at least three reactions: content, annoyed, delighted.
+- [x] Track a simple comfort state based on rough travel.
+- [x] Show at least three reactions: content, annoyed, delighted.
 - [ ] Add a humorous loading interaction.
 - [ ] Complete five internal playthroughs and record observations.
 

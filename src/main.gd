@@ -21,6 +21,16 @@ const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at mass 1.0
 const FUEL_MASS_PENALTY := 0.6     # extra fuel drain at mass 1.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at mass 1.0
 
+# Comfort is a 0..100 mood the passenger builds from how the ride feels.
+# Hard suspension jolts drain it; smooth travel restores it. The value is
+# never shown as a number — it only drives the animal's face and emotes.
+const COMFORT_MAX := 100.0
+const COMFORT_JOLT_THRESHOLD := 42.0   # |body_vy| below this counts as a smooth ride
+const COMFORT_LOSS_RATE := 0.85        # comfort lost per unit of jolt-over-threshold, per second
+const COMFORT_RECOVERY := 15.0         # comfort regained per second on smooth travel
+const COMFORT_ANNOYED := 40.0          # at or below this the passenger is annoyed
+const COMFORT_DELIGHTED := 85.0        # at or above this, and moving well, it is delighted
+
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
 
@@ -33,6 +43,8 @@ var fuel_collected := false
 var finished := false
 var body_y := 0.0
 var body_vy := 0.0
+var comfort := COMFORT_MAX
+var passenger_state := "content"
 
 
 func _ready() -> void:
@@ -73,12 +85,33 @@ func _process(delta: float) -> void:
 	if vehicle_x >= FINISH_X:
 		finished = true
 		speed = 0.0
-		message_label.text = "Sanctuary reached — driving toy complete!"
+		passenger_state = "delighted"
+		message_label.text = "%s made it to the sanctuary, thrilled!" % PASSENGER_NAME
 
 	_update_suspension(delta)
+	_update_comfort(delta)
 
 	fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
 	queue_redraw()
+
+
+func _update_comfort(delta: float) -> void:
+	# The passenger reads the ride through the suspension: sharp vertical motion
+	# is a jolt that drains comfort, calm travel lets it recover. Comfort then
+	# selects one of three moods the animal acts out.
+	var jolt := absf(body_vy)
+	if jolt > COMFORT_JOLT_THRESHOLD:
+		comfort -= (jolt - COMFORT_JOLT_THRESHOLD) * COMFORT_LOSS_RATE * delta
+	else:
+		comfort += COMFORT_RECOVERY * delta
+	comfort = clampf(comfort, 0.0, COMFORT_MAX)
+
+	if comfort <= COMFORT_ANNOYED:
+		passenger_state = "annoyed"
+	elif comfort >= COMFORT_DELIGHTED and speed > 120.0:
+		passenger_state = "delighted"
+	else:
+		passenger_state = "content"
 
 
 func _update_suspension(delta: float) -> void:
@@ -153,18 +186,54 @@ func _draw_vehicle(camera_x: float) -> void:
 	draw_rect(Rect2(24, -43, 32, 38), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+	_draw_emote(x, body_y - 58.0)
+
 
 func _draw_passenger() -> void:
 	# A simple critter peeking out of the cab window. Drawn in body space,
-	# so it rides and sags with the suspension. Purely a reaction/visual layer.
+	# so it rides and sags with the suspension. Its face acts out the current
+	# comfort mood: content, annoyed, or delighted.
 	var fur := Color("#7d6f63")
 	var dark := Color("#2c2620")
 	draw_circle(Vector2(-11, -50), 5, fur)
 	draw_circle(Vector2(9, -50), 5, fur)
 	draw_circle(Vector2(-1, -40), 13, fur)
-	draw_circle(Vector2(-6, -42), 2.0, dark)
-	draw_circle(Vector2(4, -42), 2.0, dark)
-	draw_circle(Vector2(-1, -35), 3.0, dark)
+
+	match passenger_state:
+		"annoyed":
+			# Furrowed brows sloping in, dot eyes, a flat set mouth.
+			draw_line(Vector2(-9, -47), Vector2(-3, -44), dark, 1.6)
+			draw_line(Vector2(6, -47), Vector2(0, -44), dark, 1.6)
+			draw_circle(Vector2(-6, -42), 2.0, dark)
+			draw_circle(Vector2(3, -42), 2.0, dark)
+			draw_line(Vector2(-4, -33), Vector2(2, -33), dark, 1.6)
+		"delighted":
+			# Squinting happy eyes and a wide open grin.
+			draw_arc(Vector2(-6, -42), 3.0, 0.0, PI, 6, dark, 2.0)
+			draw_arc(Vector2(3, -42), 3.0, 0.0, PI, 6, dark, 2.0)
+			draw_arc(Vector2(-1, -36), 4.0, 0.0, PI, 8, dark, 2.0)
+		_:
+			# Content: calm dot eyes and a small nose.
+			draw_circle(Vector2(-6, -42), 2.0, dark)
+			draw_circle(Vector2(4, -42), 2.0, dark)
+			draw_circle(Vector2(-1, -35), 3.0, dark)
+
+
+func _draw_emote(screen_x: float, top_y: float) -> void:
+	# A short comic call-out above the cab so the mood reads at a glance.
+	# Content stays quiet — only the notable moods speak up.
+	var text := ""
+	var tint := Color("#2c2620")
+	match passenger_state:
+		"annoyed":
+			text = "Oof!"
+			tint = Color("#b4472e")
+		"delighted":
+			text = "Wheee!"
+			tint = Color("#2f7d4f")
+	if text.is_empty():
+		return
+	draw_string(ThemeDB.fallback_font, Vector2(screen_x - 40.0, top_y), text, HORIZONTAL_ALIGNMENT_CENTER, 80.0, 20, tint)
 
 
 func _on_drive_down() -> void:
@@ -189,6 +258,8 @@ func _reset_run() -> void:
 	fuel = 62.0
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
 	body_vy = 0.0
+	comfort = COMFORT_MAX
+	passenger_state = "content"
 	drive_pressed = false
 	brake_pressed = false
 	fuel_collected = false
