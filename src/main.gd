@@ -7,6 +7,11 @@ const FUEL_PICKUP_AMOUNT := 45.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
 
+# Fuel is temporarily disabled while other things are fixed. When false: no drain,
+# never runs out, no fuel readout, and fuel stops are omitted from routes. Flip to
+# true to bring the whole fuel mechanic back — no other changes needed.
+const FUEL_ENABLED := false
+
 # Route stops as fractions of the track length, so they scale with each level's
 # length. Levels may override with their own list. Default: a fuel stop, a food
 # store, and the sanctuary finish.
@@ -115,14 +120,15 @@ func _process(delta: float) -> void:
 	else:
 		speed = max(speed - COAST_DRAG * delta, 0.0)
 
-	if fuel <= 0.0:
+	if FUEL_ENABLED and fuel <= 0.0:
 		speed = max(speed - BRAKING * delta, 0.0)
 		message_label.text = "Out of fuel — coast if you can, or reset."
 
 	# Fuel is a range meter: distance travelled burns fuel, and a heavier load
 	# burns more per pixel. Speed is a comfort concern, not a fuel one.
 	var dist := speed * delta
-	fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
+	if FUEL_ENABLED:
+		fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
 	vehicle_x = min(vehicle_x + dist, track_len + TRACK_BUFFER)
 
 	_check_route_nodes()
@@ -130,8 +136,11 @@ func _process(delta: float) -> void:
 	_update_suspension(delta)
 	_update_comfort(delta)
 
-	fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
-	_update_fuel_colour()
+	if FUEL_ENABLED:
+		fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
+		_update_fuel_colour()
+	else:
+		fuel_label.text = "Speed: %d" % roundi(speed)
 	queue_redraw()
 
 
@@ -503,6 +512,8 @@ func _reset_run() -> void:
 	track_freq = lvl.get("freq", 1.0)
 	route = []
 	for node in lvl.get("route", DEFAULT_ROUTE):
+		if not FUEL_ENABLED and node["type"] == "fuel":
+			continue
 		route.append({"type": node["type"], "x": float(node["at"]) * track_len})
 	nodes_used = {}
 
@@ -532,6 +543,6 @@ func _reset_run() -> void:
 	drive_pressed = false
 	brake_pressed = false
 	finished = false
-	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)
+	fuel_label.text = ("Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)) if FUEL_ENABLED else "Speed: 0"
 	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]
 	queue_redraw()

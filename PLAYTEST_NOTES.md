@@ -148,7 +148,8 @@ several automated "validations" could not give — and it pushed back hard.
      branching routes: a shortcut/alternate path that skips the fuel stop, so
      taking it becomes a real fuel gamble. Flagged as a major revision — the
      target for fuel depth, not built yet. Per-track variety below is the first
-     step toward it.
+     step toward it. TEMPORARILY DISABLED behind `FUEL_ENABLED` in main.gd while
+     other issues are fixed — flip it back to true to restore the whole mechanic.
   4. Driving doesn't matter — make comfort consequential and legible in the
      moment (live mood read, real stakes), not just a post-hoc star. Still open.
   5. Levels short and identical — vary the track per level (length, hills,
