@@ -381,14 +381,14 @@ func _draw_passenger(y_offset: float) -> void:
 	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
 	if n == 1:
-		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, _fur(passengers[0]))
+		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, passengers[0])
 		return
 	var left := -bw * 0.34
 	var right := bw * 0.13
 	var r := clampf(bh * 0.34, 8.0, 13.0)
 	for i in n:
 		var fx := lerpf(left, right, float(i) / float(n - 1))
-		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, _fur(passengers[i]))
+		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, passengers[i])
 	if has_cage:
 		# A divider bar between the animals — the divided cage keeping the peace.
 		var bar_x := lerpf(left, right, 0.5)
@@ -399,15 +399,49 @@ func _fur(id: String) -> Color:
 	return Color(Animals.get_data(id).get("colour", "#7d6f63"))
 
 
-func _draw_critter(center: Vector2, radius: float, colour: Color) -> void:
-	# One animal head with ears and a mood-driven face. All feature offsets are
-	# scaled from the reference radius so crews of smaller heads stay proportioned.
+func _draw_critter(center: Vector2, radius: float, id: String) -> void:
+	# One animal: a species silhouette (ears, horns, shell, beak) plus a shared
+	# mood-driven face. Feature offsets scale from the reference radius so smaller
+	# crew heads stay proportioned.
 	var s := radius / 13.0
-	var dark := Color("#2c2620")
-	draw_circle(center + Vector2(-10, -10) * s, 5.0 * s, colour)
-	draw_circle(center + Vector2(10, -10) * s, 5.0 * s, colour)
+	var colour := _fur(id)
+
+	# Behind the head — ears, horns, crest, or shell.
+	match id:
+		"rabbit":
+			draw_line(center + Vector2(-5, -8) * s, center + Vector2(-7, -25) * s, colour, 6.0 * s)
+			draw_line(center + Vector2(5, -8) * s, center + Vector2(7, -25) * s, colour, 6.0 * s)
+		"fox":
+			draw_colored_polygon(PackedVector2Array([center + Vector2(-12, -5) * s, center + Vector2(-6, -22) * s, center + Vector2(-1, -8) * s]), colour)
+			draw_colored_polygon(PackedVector2Array([center + Vector2(12, -5) * s, center + Vector2(6, -22) * s, center + Vector2(1, -8) * s]), colour)
+		"goat":
+			draw_line(center + Vector2(-4, -9) * s, center + Vector2(-11, -21) * s, colour.darkened(0.3), 3.5 * s)
+			draw_line(center + Vector2(4, -9) * s, center + Vector2(11, -21) * s, colour.darkened(0.3), 3.5 * s)
+			draw_circle(center + Vector2(-12, 1) * s, 3.5 * s, colour)
+			draw_circle(center + Vector2(12, 1) * s, 3.5 * s, colour)
+		"parrot":
+			draw_line(center + Vector2(-1, -11) * s, center + Vector2(-5, -23) * s, colour.darkened(0.15), 3.0 * s)
+			draw_line(center + Vector2(2, -11) * s, center + Vector2(3, -24) * s, colour.darkened(0.15), 3.0 * s)
+		"tortoise":
+			draw_circle(center + Vector2(0, 8) * s, radius * 1.2, colour.darkened(0.32))
+		_:
+			# Wombat: small round ears.
+			draw_circle(center + Vector2(-10, -10) * s, 5.0 * s, colour)
+			draw_circle(center + Vector2(10, -10) * s, 5.0 * s, colour)
+
 	draw_circle(center, radius, colour)
 
+	# In front of the head — beaks and snouts.
+	if id == "parrot":
+		draw_colored_polygon(PackedVector2Array([center + Vector2(5, 0) * s, center + Vector2(15, 3) * s, center + Vector2(5, 7) * s]), Color("#e8a63a"))
+	elif id == "fox":
+		draw_circle(center + Vector2(0, 6) * s, 3.5 * s, colour.lightened(0.4))
+
+	_draw_face(center, s)
+
+
+func _draw_face(center: Vector2, s: float) -> void:
+	var dark := Color("#2c2620")
 	match passenger_state:
 		"annoyed":
 			# Furrowed brows sloping in, dot eyes, a flat set mouth.
