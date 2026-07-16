@@ -12,6 +12,40 @@ const REST_HEIGHT := 25.0
 # true to bring the whole fuel mechanic back — no other changes needed.
 const FUEL_ENABLED := false
 
+const CRITTER_ART_DIR := "res://assets/animals/"
+
+# The world is drawn zoomed so the vehicle and its passengers read as the subject
+# rather than a distant doll-house, and the camera puts the ground under the
+# vehicle low in the frame so the view is spent on road, not empty sky.
+#
+# Zoom trades size against lookahead, and lookahead is the skill: the player must
+# see a bump coming to ease off for it. At 2.0 the view is 360 world px wide, so
+# with the vehicle a quarter across there is ~270 px of road ahead — comfortably
+# past the Truck's ~173 px braking distance at its 300 px/s top speed, and most
+# of a bump (the rough terrain term has a ~350 px wavelength). Pushing to 2.5
+# drops that to ~200 px, which is inside braking distance: hills stop being
+# readable. Raise this only alongside a lower CAM_ANCHOR_X.
+const WORLD_ZOOM := 2.0
+const CAM_ANCHOR_X := 0.26
+const CAM_ANCHOR_Y := 0.58
+const CAM_FOLLOW := 3.0              # how quickly the camera settles to the terrain height
+
+# Per-animal sprite placement, tuned against the real cab render. The generated
+# art is tight-cropped to each animal's own proportions — a rabbit is 40% ears, a
+# wombat is nearly all head — so scaling every sprite to one height would leave
+# the heads visibly different sizes. `scale` multiplies the drawn radius to set
+# sprite height, chosen so the HEAD reads the same size across species; `offset`
+# then shifts the sprite (in multiples of radius) so each head clears the cab
+# side rather than sinking into it.
+const CRITTER_ART := {
+	"wombat": {"scale": 3.2, "offset": Vector2(0.0, -0.15)},
+	"rabbit": {"scale": 3.6, "offset": Vector2(0.0, -0.6)},
+	"fox": {"scale": 3.3, "offset": Vector2(0.0, -0.35)},
+	"tortoise": {"scale": 3.2, "offset": Vector2(-0.1, 0.05)},
+	"parrot": {"scale": 3.3, "offset": Vector2(-0.05, -0.3)},
+	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
+}
+
 # Route stops as fractions of the track length, so they scale with each level's
 # length. Levels may override with their own list. Default: a fuel stop, a food
 # store, and the sanctuary finish.
@@ -26,6 +60,16 @@ const NODE_STYLE := {
 	"vet": {"label": "VET", "colour": "#5a9bd4"},
 	"sanctuary": {"label": "SANCTUARY", "colour": "#6b9c72"},
 }
+# Passenger seating, solved from the vehicle's own body box so new vehicles need
+# no new numbers. The crew is spread across SEAT_SPAN of the body width, shifted
+# back from the cab, and heads are sized to fit that span (see _crew_head_radius).
+const SEAT_SPAN := 0.66            # fraction of body width the crew is spread across
+const SEAT_SHIFT := 0.07           # how far back from body centre the row sits
+const SOLO_HEAD := 0.40            # lone passenger head radius, as a fraction of body height
+const SEAT_OVERLAP := 1.35         # how much wider than its slot a head may sit
+const HEAD_W_PER_RADIUS := 3.5     # nominal sprite width in units of drawn radius
+const MIN_HEAD := 5.0              # never shrink a head below this, even when crowded
+
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
 
@@ -65,6 +109,9 @@ var finished := false
 var body_y := 0.0
 var body_vy := 0.0
 var comfort := COMFORT_MAX
+var _critter_art := {}   # "<id>_<mood>" -> Texture2D, filled on first draw
+var cam_y := 0.0         # smoothed terrain height the camera tracks
+var _cam := Vector2.ZERO # world point at the screen's top-left, set each frame
 var passenger_state := "content"
 var ever_annoyed := false
 var ever_delighted := false
@@ -91,9 +138,17 @@ func _ready() -> void:
 	_reset_run()
 
 
+func _update_camera(delta: float) -> void:
+	# Settle the camera onto the terrain under the vehicle. Smoothed, so cresting
+	# a hill pans the view instead of snapping it — an abrupt camera would read as
+	# a jolt the player did not cause, which is exactly the signal comfort uses.
+	cam_y = lerpf(cam_y, terrain_y(vehicle_x), 1.0 - exp(-CAM_FOLLOW * delta))
+
+
 func _process(delta: float) -> void:
 	if advancing:
 		return
+	_update_camera(delta)
 	if finished:
 		_update_suspension(delta)
 		finish_hold += delta
@@ -266,77 +321,93 @@ func terrain_y(world_x: float) -> float:
 		+ sin(t * 0.018 * track_freq) * 28.0 * track_rough
 
 
-func _draw() -> void:
-	var camera_x: float = clamp(vehicle_x - 220.0, 0.0, maxf(0.0, track_len + TRACK_BUFFER - size.x))
+func _w2s(world: Vector2) -> Vector2:
+	# World point to screen point through the zoom camera.
+	return (world - _cam) * WORLD_ZOOM
 
-	# Sky and distant hills.
+
+func _draw() -> void:
+	# The camera holds the vehicle at CAM_ANCHOR_X across and keeps the ground
+	# beneath it at CAM_ANCHOR_Y down. cam_y is smoothed in _process so hills pan
+	# the view rather than jerking it.
+	var view_w := size.x / WORLD_ZOOM
+	var camera_x: float = clamp(vehicle_x - view_w * CAM_ANCHOR_X, 0.0, maxf(0.0, track_len + TRACK_BUFFER - view_w))
+	_cam = Vector2(camera_x, cam_y - (size.y * CAM_ANCHOR_Y) / WORLD_ZOOM)
+
+	# Sky and distant hills. The hills are a backdrop pinned near the horizon with
+	# a slow horizontal parallax, so they read as far away rather than scaling up
+	# with the zoom.
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#dcefd8"))
-	var distant := PackedVector2Array([Vector2(0, 760)])
+	var horizon := _w2s(Vector2(0.0, cam_y)).y
+	var distant := PackedVector2Array([Vector2(0, size.y)])
 	for screen_x in range(0, int(size.x) + 20, 20):
-		var world_x := camera_x * 0.35 + screen_x
-		distant.append(Vector2(screen_x, 650.0 + sin(world_x * 0.004) * 60.0))
-	distant.append(Vector2(size.x, 900))
+		var world_x := camera_x * 0.35 + float(screen_x) / WORLD_ZOOM
+		distant.append(Vector2(screen_x, horizon - 120.0 + sin(world_x * 0.004) * 60.0))
+	distant.append(Vector2(size.x, size.y))
 	draw_colored_polygon(distant, Color("#a8c99b"))
 
 	# Main terrain.
 	var ground := PackedVector2Array([Vector2(0, size.y)])
 	for screen_x in range(-20, int(size.x) + 40, 12):
-		var world_x := camera_x + screen_x
-		ground.append(Vector2(screen_x, terrain_y(world_x)))
+		var world_x := camera_x + float(screen_x) / WORLD_ZOOM
+		ground.append(Vector2(screen_x, _w2s(Vector2(world_x, terrain_y(world_x))).y))
 	ground.append(Vector2(size.x, size.y))
 	draw_colored_polygon(ground, Color("#78945e"))
 
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
 		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
-		_draw_marker(node["x"], camera_x, style["label"], Color(style["colour"]), still_visible)
-	_draw_trailer(camera_x)
-	_draw_vehicle(camera_x)
+		_draw_marker(node["x"], style["label"], Color(style["colour"]), still_visible)
+	_draw_trailer()
+	_draw_vehicle()
 
 
-func _draw_marker(world_x: float, camera_x: float, label_text: String, marker_color: Color, visible_marker: bool) -> void:
+func _draw_marker(world_x: float, label_text: String, marker_color: Color, visible_marker: bool) -> void:
 	if not visible_marker:
 		return
-	var x := world_x - camera_x
-	if x < -80.0 or x > size.x + 80.0:
+	var base := _w2s(Vector2(world_x, terrain_y(world_x)))
+	if base.x < -160.0 or base.x > size.x + 160.0:
 		return
-	var y := terrain_y(world_x)
-	draw_line(Vector2(x, y), Vector2(x, y - 110), Color("#3d4b38"), 7.0)
+	# The sign is drawn in world units through the camera transform so it grows
+	# with the zoom like everything else on the ground.
+	draw_set_transform(base, 0.0, Vector2(WORLD_ZOOM, WORLD_ZOOM))
+	draw_line(Vector2.ZERO, Vector2(0, -110), Color("#3d4b38"), 7.0)
 	# Size the sign to the label so longer names like "SANCTUARY" don't truncate.
 	var font := ThemeDB.fallback_font
 	var text_w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	var sign_w := maxf(90.0, text_w + 24.0)
-	draw_rect(Rect2(x - sign_w * 0.5, y - 145, sign_w, 42), marker_color, true)
-	draw_string(font, Vector2(x - sign_w * 0.5 + 12.0, y - 117), label_text, HORIZONTAL_ALIGNMENT_CENTER, sign_w - 24.0, 15, Color("#263127"))
+	draw_rect(Rect2(-sign_w * 0.5, -145, sign_w, 42), marker_color, true)
+	draw_string(font, Vector2(-sign_w * 0.5 + 12.0, -117), label_text, HORIZONTAL_ALIGNMENT_CENTER, sign_w - 24.0, 15, Color("#263127"))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_trailer(camera_x: float) -> void:
+func _draw_trailer() -> void:
 	if not has_trailer:
 		return
 	var bw: float = vehicle_data.get("body_w", 96.0)
 	var tx_world := vehicle_x - (bw * 0.5 + 42.0)
-	var tx := tx_world - camera_x
 	var ground := terrain_y(tx_world)
 	var slope := terrain_y(tx_world + 16.0) - terrain_y(tx_world - 16.0)
 	var angle := atan2(slope, 32.0)
+	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
 
 	# A short hitch bar from the trailer up to the vehicle's rear.
-	draw_line(Vector2(tx + 26.0, ground - 16.0), Vector2((vehicle_x - camera_x) - bw * 0.5, body_y - 6.0), Color("#4a4f45"), 3.0)
+	draw_line(_w2s(Vector2(tx_world + 26.0, ground - 16.0)), _w2s(Vector2(vehicle_x - bw * 0.5, body_y - 6.0)), Color("#4a4f45"), 3.0 * WORLD_ZOOM)
 
 	# Wheel on the ground, box riding above it.
-	draw_set_transform(Vector2(tx, ground - 10.0), angle, Vector2.ONE)
+	draw_set_transform(_w2s(Vector2(tx_world, ground - 10.0)), angle, zoom)
 	draw_circle(Vector2(0, 0), 12, Color("#30352f"))
 	draw_circle(Vector2(0, 0), 5, Color("#b8b6a8"))
-	draw_set_transform(Vector2(tx, ground - 24.0), angle, Vector2.ONE)
+	draw_set_transform(_w2s(Vector2(tx_world, ground - 24.0)), angle, zoom)
 	draw_rect(Rect2(-26, -22, 52, 26), Color("#9a8b76"), true)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_vehicle(camera_x: float) -> void:
-	var x := vehicle_x - camera_x
+func _draw_vehicle() -> void:
 	var slope := terrain_y(vehicle_x + 18.0) - terrain_y(vehicle_x - 18.0)
 	var angle := atan2(slope, 36.0)
 	var ground_y := terrain_y(vehicle_x)
+	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
 
 	var bw: float = vehicle_data.get("body_w", 96.0)
 	var bh: float = vehicle_data.get("body_h", 32.0)
@@ -346,24 +417,25 @@ func _draw_vehicle(camera_x: float) -> void:
 	var body_top := 4.0 - bh
 
 	# Wheels stay planted on the ground and follow the slope.
-	draw_set_transform(Vector2(x, ground_y - wr * 0.7), angle, Vector2.ONE)
+	draw_set_transform(_w2s(Vector2(vehicle_x, ground_y - wr * 0.7)), angle, zoom)
 	draw_circle(Vector2(-wdx, 0), wr, Color("#30352f"))
 	draw_circle(Vector2(wdx, 0), wr, Color("#30352f"))
 	draw_circle(Vector2(-wdx, 0), wr * 0.44, Color("#b8b6a8"))
 	draw_circle(Vector2(wdx, 0), wr * 0.44, Color("#b8b6a8"))
 
 	# Body rides on the suspension, bobbing relative to the wheels.
-	draw_set_transform(Vector2(x, body_y), angle, Vector2.ONE)
+	draw_set_transform(_w2s(Vector2(vehicle_x, body_y)), angle, zoom)
 	draw_rect(Rect2(-bw * 0.5, body_top, bw, bh), body_col, true)
 	draw_rect(Rect2(-bw * 0.23, body_top - 24.0, bw * 0.45, 25.0), Color("#f2d7a8"), true)
 	_draw_passenger(_passenger_load_offset())
 	draw_rect(Rect2(bw * 0.25, body_top - 15.0, bw * 0.33, bh + 6.0), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+	var over_cab := _w2s(Vector2(vehicle_x, body_y - 58.0))
 	if loading:
-		draw_string(ThemeDB.fallback_font, Vector2(x - 45.0, body_y - 58.0), _load_line(), HORIZONTAL_ALIGNMENT_CENTER, 90.0, 18, Color("#8a5a2b"))
+		draw_string(ThemeDB.fallback_font, over_cab - Vector2(45.0, 0.0), _load_line(), HORIZONTAL_ALIGNMENT_CENTER, 90.0, 18, Color("#8a5a2b"))
 	elif is_loaded:
-		_draw_emote(x, body_y - 58.0)
+		_draw_emote(over_cab.x, over_cab.y)
 
 
 func _passenger_load_offset() -> float:
@@ -375,6 +447,21 @@ func _passenger_load_offset() -> float:
 		var p := clampf(load_t / LOAD_TIME, 0.0, 1.0)
 		return pow(1.0 - p, 3) * 26.0
 	return 26.0
+
+
+func _crew_head_radius(bw: float, bh: float, n: int) -> float:
+	# Head size for a crew, derived from the geometry rather than tuned per
+	# vehicle: a lone passenger gets the full head, and a crew shrinks only as far
+	# as it must to fit the bed. This keeps working for vehicles that do not exist
+	# yet — a new body_w/body_h re-solves the layout with no numbers to revisit.
+	var solo := bh * SOLO_HEAD
+	if n <= 1:
+		return solo
+	var spacing := (bw * SEAT_SPAN) / float(n - 1)
+	# A head may run wider than its slot — animals sit shoulder to shoulder — but
+	# past SEAT_OVERLAP the ones in the middle disappear behind their neighbours.
+	var fits := spacing * SEAT_OVERLAP / HEAD_W_PER_RADIUS
+	return maxf(minf(solo, fits), MIN_HEAD)
 
 
 func _draw_passenger(y_offset: float) -> void:
@@ -392,9 +479,9 @@ func _draw_passenger(y_offset: float) -> void:
 	if n == 1:
 		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, passengers[0])
 		return
-	var left := -bw * 0.34
-	var right := bw * 0.13
-	var r := clampf(bh * 0.34, 8.0, 13.0)
+	var left := -bw * SEAT_SPAN * 0.5 - bw * SEAT_SHIFT
+	var right := bw * SEAT_SPAN * 0.5 - bw * SEAT_SHIFT
+	var r := _crew_head_radius(bw, bh, n)
 	for i in n:
 		var fx := lerpf(left, right, float(i) / float(n - 1))
 		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, passengers[i])
@@ -408,10 +495,35 @@ func _fur(id: String) -> Color:
 	return Color(Animals.get_data(id).get("colour", "#7d6f63"))
 
 
+func _critter_texture(id: String, mood: String) -> Texture2D:
+	var key := id + "_" + mood
+	if _critter_art.has(key):
+		return _critter_art[key]
+	var path := CRITTER_ART_DIR + key + ".png"
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	_critter_art[key] = tex
+	return tex
+
+
 func _draw_critter(center: Vector2, radius: float, id: String) -> void:
-	# One animal: a species silhouette (ears, horns, shell, beak) plus a shared
-	# mood-driven face. Feature offsets scale from the reference radius so smaller
-	# crew heads stay proportioned.
+	# One animal, drawn from its mood sprite. passenger_state already reads
+	# "content"/"annoyed"/"delighted", which is exactly the filename suffix, so a
+	# mood change swaps the texture and nothing else.
+	var tex := _critter_texture(id, passenger_state)
+	if tex == null:
+		_draw_critter_shapes(center, radius, id)
+		return
+	var art: Dictionary = CRITTER_ART.get(id, {})
+	var h := radius * float(art.get("scale", 3.0))
+	var w := h * float(tex.get_width()) / float(tex.get_height())
+	var pos := center + Vector2(art.get("offset", Vector2.ZERO)) * radius - Vector2(w, h) * 0.5
+	draw_texture_rect(tex, Rect2(pos, Vector2(w, h)), false)
+
+
+func _draw_critter_shapes(center: Vector2, radius: float, id: String) -> void:
+	# Fallback used only if a mood sprite is missing: a species silhouette (ears,
+	# horns, shell, beak) plus a shared mood-driven face. Feature offsets scale
+	# from the reference radius so smaller crew heads stay proportioned.
 	var s := radius / 13.0
 	var colour := _fur(id)
 
@@ -530,6 +642,7 @@ func _reset_run() -> void:
 	speed = 0.0
 	fuel = veh_start_fuel
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
+	cam_y = terrain_y(vehicle_x)
 	body_vy = 0.0
 	comfort = COMFORT_MAX
 	passenger_state = "content"

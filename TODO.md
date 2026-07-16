@@ -63,6 +63,25 @@
 - [ ] Record completion, replay, confusion, smiles, and requests for more.
 - [ ] Make an explicit continue, revise, or stop decision.
 
+### Open from the first external test
+
+- [ ] Passenger reaction variance. Comfort is one global 0..100 value, so the
+      whole crew shares a mood: on the five-animal level all five wear the exact
+      same face and change it on the same frame, which reads as a chorus rather
+      than as passengers. Each animal already carries a `temperament` in
+      `Animals.DATA` (placid wombat, timid rabbit, sly fox, slow tortoise, loud
+      parrot, stubborn goat) that does nothing during the drive. Give comfort a
+      per-animal value keyed off temperament — a timid rabbit frets long before a
+      placid wombat notices — so a crew reacts as individuals and the loadout
+      choice from Gate 3 changes how the drive *feels*, not just what it weighs.
+      Feeds the tester's "driving style doesn't seem to make any difference"
+      (item 4 below): variance is what makes a reaction legible as a *reaction*.
+- [ ] Make driving consequential in the moment (Gate 5 item 4). Still open. The
+      animals now carry real expressions, so the signal exists — what is missing
+      is a stake attached to it.
+- [ ] Branching routes so the fuel stop can be missed (Gate 5 item 3). Fuel is
+      disabled behind `FUEL_ENABLED` in main.gd until this lands.
+
 ## Deferred until the prototype earns them
 
 - Commercial artwork and animation pipeline.
