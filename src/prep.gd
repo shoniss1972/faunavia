@@ -29,10 +29,10 @@ func _make_root_column() -> VBoxContainer:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 48)
+		margin.add_theme_constant_override("margin_" + side, 28)
 	add_child(margin)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 22)
+	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
 	return column
 
@@ -60,73 +60,83 @@ func _build_prep() -> void:
 	var veh: Dictionary = Vehicles.get_data(level["vehicle"])
 	capacity = int(veh["capacity"])
 
-	var column := _make_root_column()
-	_add_label(column, level["title"], 34)
-	_add_label(column, level["brief"], 22)
-	_add_label(column, "Vehicle: %s  ·  %d slots  ·  top speed %d" % [veh["name"], capacity, int(veh["max_speed"])], 20)
-	capacity_label = _add_label(column, "", 22)
-	_add_label(column, "Heavier cargo drinks more fuel — the mid-route pickup matters.", 17)
+	# Row heights scale down as a level gets busier, so even the fullest loadout
+	# (five animals + equipment + trailer) fits on one screen without scrolling.
+	var rows: int = level["deliver"].size() + level["equipment"].size() + (1 if level.get("trailer", false) else 0)
+	var animal_h := 84 if rows <= 4 else (72 if rows <= 6 else 60)
+	var gear_h := 76 if rows <= 4 else (64 if rows <= 6 else 54)
 
-	_add_label(column, "— LOAD THE ANIMALS —", 20)
+	var column := _make_root_column()
+	_add_label(column, level["title"], 28)
+	_add_label(column, level["brief"], 17)
+	_add_label(column, "Vehicle: %s  ·  %d slots  ·  top speed %d" % [veh["name"], capacity, int(veh["max_speed"])], 17)
+	capacity_label = _add_label(column, "", 20)
+
+	_add_label(column, "— LOAD THE ANIMALS —", 16)
 	for id in level["deliver"]:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
+		row.add_theme_constant_override("separation", 12)
 		var swatch := ColorRect.new()
 		swatch.color = Color(Animals.get_data(id).get("colour", "#7d6f63"))
-		swatch.custom_minimum_size = Vector2(72, 96)
+		swatch.custom_minimum_size = Vector2(52, animal_h)
 		row.add_child(swatch)
 		var btn := Button.new()
 		btn.toggle_mode = true
-		btn.custom_minimum_size = Vector2(0, 96)
+		btn.custom_minimum_size = Vector2(0, animal_h)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 24)
+		btn.add_theme_font_size_override("font_size", 19)
 		btn.text = _animal_button_text(id, false)
 		btn.toggled.connect(_on_animal_toggled.bind(id, btn))
 		row.add_child(btn)
 		column.add_child(row)
 
-	if not level["equipment"].is_empty():
-		_add_label(column, "— PACK EQUIPMENT —", 20)
+	if not level["equipment"].is_empty() or level.get("trailer", false):
+		_add_label(column, "— PACK GEAR —", 16)
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 12)
+		grid.add_theme_constant_override("v_separation", 8)
+		column.add_child(grid)
 		for eq in level["equipment"]:
 			var btn := Button.new()
 			btn.toggle_mode = true
-			btn.custom_minimum_size = Vector2(0, 88)
-			btn.add_theme_font_size_override("font_size", 24)
+			btn.custom_minimum_size = Vector2(0, gear_h)
+			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			btn.add_theme_font_size_override("font_size", 19)
 			btn.text = _equip_button_text(eq, false)
 			btn.toggled.connect(_on_equip_toggled.bind(eq, btn))
-			column.add_child(btn)
-
-	if level.get("trailer", false):
-		_add_label(column, "— HITCH A TRAILER —", 20)
-		var tbtn := Button.new()
-		tbtn.toggle_mode = true
-		tbtn.custom_minimum_size = Vector2(0, 88)
-		tbtn.add_theme_font_size_override("font_size", 24)
-		tbtn.text = _trailer_button_text(false)
-		tbtn.toggled.connect(_on_trailer_toggled.bind(tbtn))
-		column.add_child(tbtn)
+			grid.add_child(btn)
+		if level.get("trailer", false):
+			var tbtn := Button.new()
+			tbtn.toggle_mode = true
+			tbtn.custom_minimum_size = Vector2(0, gear_h)
+			tbtn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tbtn.add_theme_font_size_override("font_size", 19)
+			tbtn.text = _trailer_button_text(false)
+			tbtn.toggled.connect(_on_trailer_toggled.bind(tbtn))
+			grid.add_child(tbtn)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
 
-	status_label = _add_label(column, "", 22)
+	status_label = _add_label(column, "", 19)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	column.add_child(buttons)
 
 	var back_button := Button.new()
-	back_button.custom_minimum_size = Vector2(0, 120)
-	back_button.add_theme_font_size_override("font_size", 24)
+	back_button.custom_minimum_size = Vector2(0, 96)
+	back_button.add_theme_font_size_override("font_size", 22)
 	back_button.text = "← Levels"
 	back_button.pressed.connect(_on_back)
 	buttons.add_child(back_button)
 
 	depart_button = Button.new()
-	depart_button.custom_minimum_size = Vector2(0, 120)
+	depart_button.custom_minimum_size = Vector2(0, 96)
 	depart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	depart_button.add_theme_font_size_override("font_size", 30)
+	depart_button.add_theme_font_size_override("font_size", 28)
 	depart_button.text = "DEPART"
 	depart_button.pressed.connect(_on_depart)
 	buttons.add_child(depart_button)
