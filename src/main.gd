@@ -284,8 +284,12 @@ func _draw_marker(world_x: float, camera_x: float, label_text: String, marker_co
 		return
 	var y := terrain_y(world_x)
 	draw_line(Vector2(x, y), Vector2(x, y - 110), Color("#3d4b38"), 7.0)
-	draw_rect(Rect2(x - 45, y - 145, 90, 42), marker_color, true)
-	draw_string(ThemeDB.fallback_font, Vector2(x - 38, y - 117), label_text, HORIZONTAL_ALIGNMENT_CENTER, 76, 15, Color("#263127"))
+	# Size the sign to the label so longer names like "SANCTUARY" don't truncate.
+	var font := ThemeDB.fallback_font
+	var text_w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+	var sign_w := maxf(90.0, text_w + 24.0)
+	draw_rect(Rect2(x - sign_w * 0.5, y - 145, sign_w, 42), marker_color, true)
+	draw_string(font, Vector2(x - sign_w * 0.5 + 12.0, y - 117), label_text, HORIZONTAL_ALIGNMENT_CENTER, sign_w - 24.0, 15, Color("#263127"))
 
 
 func _draw_trailer(camera_x: float) -> void:

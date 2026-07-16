@@ -111,3 +111,42 @@ Not a new playtest; addressed findings and parked items recorded above.
 Still parked: reward moment-to-moment easing/braking in comfort; per-section
 terrain roughness; jolt sound/shake. These want a human playtest (Gate 5) to
 justify before building.
+
+---
+
+## Gate 5 — first external test (itch.io web build) — 2026-07-16
+
+First real human playtest, on an itch.io HTML5 build. This is the honest check
+several automated "validations" could not give — and it pushed back hard.
+
+### Observation (tester feedback)
+
+- Got bored: levels are very short and the drive is exactly the same every time.
+  (The track — terrain shape and length — is identical across all 12 levels;
+  only the prep loadout changes.)
+- Fuel doesn't read as a mechanic: it starts at a part tank, never runs out, and
+  the fuel stop sits on the only road so it can't be skipped — so its purpose is
+  unclear. (Our 24-33% margins mean the player never actually strands.)
+- The animals all look the same — only fur colour differs; the head shape is
+  identical, so they don't register as different creatures.
+- Driving style "doesn't seem to make any difference to anything." The whole
+  comfort/mood premise (Gate 2) is not landing in the moment for a real player,
+  even though the star system rewards it after the fact.
+- Bug: the finish sign reads "Sanctua" — "SANCTUARY" is truncated by the marker
+  width.
+
+### Decision
+
+- Keep: the prep/logistics puzzle and progression scaffolding seem fine; the
+  complaints are about the DRIVE being same-y and its stakes being invisible.
+- Change (triage):
+  1. Sanctua truncation — trivial marker-width fix. [done]
+  2. Animals look the same — give each a distinct silhouette (ears, shell, beak,
+     horns), not just colour.
+  3. Fuel is invisible/pointless — either make it genuinely bite (some levels
+     unreachable without the stop; overloading can strand) or cut it. Design fork.
+  4. Driving doesn't matter — make comfort consequential and legible in the
+     moment (live mood read, real stakes), not just a post-hoc star. Design fork.
+  5. Levels short and identical — vary the track per level (length, hills,
+     roughness). Biggest boredom lever; also makes driving skill and fuel matter.
+- Remove: nothing yet — but be willing to cut fuel if it can't be made to matter.
