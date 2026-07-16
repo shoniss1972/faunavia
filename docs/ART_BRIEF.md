@@ -12,15 +12,27 @@ character are what we're buying here, not realism.
 Give Gemini these constraints on every generation. Getting them consistent
 across all six is more important than any single image looking great.
 
-- **Format:** PNG with a **fully transparent background** (alpha channel). No
-  backdrop, no ground shadow baked in, no frame or border.
+- **Background: solid flat magenta `#FF00FF`.** **Do not ask for a transparent
+  background** — see the warning below. We key the magenta out ourselves. The
+  background must be one uniform colour edge to edge: no gradient, no vignette,
+  no texture, no drop shadow, and **no checkerboard pattern**.
 - **Canvas:** **square, 1024 × 1024**. We downscale in-engine; generating big
   keeps edges crisp when the sprite is only ~90 px tall on screen.
-- **Subject placement:** the animal **centred**, filling ~80% of the frame,
-  with a few px of transparent margin all round. Same scale and centring on all
-  six so they drop into the same passenger slot without re-tuning.
+- **Subject placement:** the animal **centred**, filling ~80% of the frame.
+  **The animal must not touch or run off any edge** — a clear magenta margin all
+  round is what lets the background key cleanly.
+- **Unbroken outline.** Every animal fully enclosed by its thin darker outline,
+  with no gaps where the background colour meets the fill directly.
 - **One subject only.** No accessories, no vehicle, no props, no text/labels,
   no signature or watermark.
+
+> **Why not transparent:** we tried. Gemini cannot emit a real alpha channel —
+> asked for "transparent background" it renders a *picture of* a transparency
+> checkerboard, fully opaque, because that is what cutouts look like in its
+> training data. The first sheet came back 100% opaque with painted grey squares
+> and was unusable. Magenta is chosen because it appears nowhere in the palette
+> in §5; white would collide with the goat's white fur, the fox's cream muzzle,
+> and the rabbit's sand coat.
 - **Even lighting, flat colour.** Soft, mostly-flat shading with a single gentle
   light from top-left. Avoid dramatic shadows, gradients-heavy realism, or busy
   texture — it won't survive downscaling and clashes with the flat 2D game.
@@ -109,17 +121,23 @@ tester was missing.
 ## 7. Copy-paste prompt template
 
 Fill in the two bracketed spots per generation. Keep everything else identical.
+Attach the approved style-reference image to every generation (§8).
 
 > A single [ANIMAL DESCRIPTION FROM §6], head-and-shoulders bust, facing the
 > camera in a gentle 3/4 view looking slightly to the right, centred and upright,
-> filling about 80% of a square frame. Expression: [content and calm with a small
-> closed smile / annoyed and grumpy with furrowed brow and flattened ears /
-> delighted with a big open grin and sparkling wide eyes].
+> filling about 80% of a square frame with clear empty margin on all four sides —
+> the animal must not touch or be cropped by any edge. Expression: [content and
+> calm with a small closed smile / annoyed and grumpy with furrowed brow and
+> flattened ears / delighted with a big open grin and sparkling wide eyes].
 > Cute, friendly mobile-game mascot style. Bold clean shapes, soft rounded forms,
-> smooth flat cel-shading with a subtle soft edge, thin darker outline. Large
-> friendly cartoon eyes. Storybook-charming, not realistic, not photographic, not
-> a glossy 3D render. Warm, slightly muted natural palette. Fully transparent
-> background, no shadow, no props, no text. 1024x1024 PNG.
+> smooth flat cel-shading with a subtle soft edge, thin darker outline fully
+> enclosing the character. Large friendly cartoon eyes. Storybook-charming, not
+> realistic, not photographic, not a glossy 3D render. Warm, slightly muted
+> natural palette.
+> The background must be solid flat pure magenta #FF00FF, completely uniform
+> across the entire frame, with no gradient, no vignette, no texture, no shadow,
+> and no checkerboard or transparency pattern of any kind. Nothing in the
+> character may be magenta or pink. No props, no text, no watermark. 1024x1024.
 
 ## 8. Consistency workflow (do this, it matters)
 
