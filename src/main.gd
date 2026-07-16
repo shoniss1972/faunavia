@@ -60,14 +60,18 @@ const NODE_STYLE := {
 	"vet": {"label": "VET", "colour": "#5a9bd4"},
 	"sanctuary": {"label": "SANCTUARY", "colour": "#6b9c72"},
 }
-# Passenger seating, solved from the vehicle's own body box so new vehicles need
-# no new numbers. The crew is spread across SEAT_SPAN of the body width, shifted
-# back from the cab, and heads are sized to fit that span (see _crew_head_radius).
-const SEAT_SPAN := 0.66            # fraction of body width the crew is spread across
-const SEAT_SHIFT := 0.07           # how far back from body centre the row sits
+# The vehicle's body box, as fractions of body width. The cab is shared with the
+# seating below: passengers ride the bed BEHIND it, so the cab frame never lands
+# across a face. Keep these two in agreement — that is the point of sharing them.
+const CAB_X := 0.25                # where the cab frame begins
+const CAB_W := 0.33                # how wide the cab frame is
+
+# Passenger seating, solved from the body box so new vehicles need no new
+# numbers: give the bed's two edges and the crew size, and the layout follows.
+const SEAT_BACK := 0.44            # the bed's back edge, behind body centre
 const SOLO_HEAD := 0.40            # lone passenger head radius, as a fraction of body height
-const SEAT_OVERLAP := 1.35         # how much wider than its slot a head may sit
 const HEAD_W_PER_RADIUS := 3.5     # nominal sprite width in units of drawn radius
+const HEAD_SPACING := 0.75         # gap between head centres, as a fraction of head width
 const MIN_HEAD := 5.0              # never shrink a head below this, even when crowded
 
 const SUSPENSION_STIFFNESS := 90.0
@@ -428,7 +432,7 @@ func _draw_vehicle() -> void:
 	draw_rect(Rect2(-bw * 0.5, body_top, bw, bh), body_col, true)
 	draw_rect(Rect2(-bw * 0.23, body_top - 24.0, bw * 0.45, 25.0), Color("#f2d7a8"), true)
 	_draw_passenger(_passenger_load_offset())
-	draw_rect(Rect2(bw * 0.25, body_top - 15.0, bw * 0.33, bh + 6.0), Color("#596b52"), false, 5.0)
+	draw_rect(Rect2(bw * CAB_X, body_top - 15.0, bw * CAB_W, bh + 6.0), Color("#596b52"), false, 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	var over_cab := _w2s(Vector2(vehicle_x, body_y - 58.0))
@@ -450,18 +454,14 @@ func _passenger_load_offset() -> float:
 
 
 func _crew_head_radius(bw: float, bh: float, n: int) -> float:
-	# Head size for a crew, derived from the geometry rather than tuned per
-	# vehicle: a lone passenger gets the full head, and a crew shrinks only as far
-	# as it must to fit the bed. This keeps working for vehicles that do not exist
-	# yet — a new body_w/body_h re-solves the layout with no numbers to revisit.
-	var solo := bh * SOLO_HEAD
-	if n <= 1:
-		return solo
-	var spacing := (bw * SEAT_SPAN) / float(n - 1)
-	# A head may run wider than its slot — animals sit shoulder to shoulder — but
-	# past SEAT_OVERLAP the ones in the middle disappear behind their neighbours.
-	var fits := spacing * SEAT_OVERLAP / HEAD_W_PER_RADIUS
-	return maxf(minf(solo, fits), MIN_HEAD)
+	# Head size for a crew, solved from the bed rather than tuned per vehicle: fit
+	# n heads between the bed's back edge and the cab, letting each overlap its
+	# neighbour down to HEAD_SPACING before shrinking them. A lone passenger gets
+	# the full head. New vehicles re-solve from their own body box — no numbers to
+	# revisit.
+	var bed := bw * (SEAT_BACK + CAB_X)
+	var head_w := bed / (1.0 + HEAD_SPACING * float(n - 1))
+	return maxf(minf(bh * SOLO_HEAD, head_w / HEAD_W_PER_RADIUS), MIN_HEAD)
 
 
 func _draw_passenger(y_offset: float) -> void:
@@ -479,9 +479,17 @@ func _draw_passenger(y_offset: float) -> void:
 	if n == 1:
 		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, passengers[0])
 		return
-	var left := -bw * SEAT_SPAN * 0.5 - bw * SEAT_SHIFT
-	var right := bw * SEAT_SPAN * 0.5 - bw * SEAT_SHIFT
+	# Heads sit wholly between the bed's back edge and the cab, so the cab frame
+	# never crosses a face.
 	var r := _crew_head_radius(bw, bh, n)
+	var half := r * HEAD_W_PER_RADIUS * 0.5
+	var left := -bw * SEAT_BACK + half
+	var right := bw * CAB_X - half
+	if right < left:
+		# Bed too narrow for the crew even at MIN_HEAD: stack them at its centre
+		# rather than letting the row invert and run backwards.
+		left = (left + right) * 0.5
+		right = left
 	for i in n:
 		var fx := lerpf(left, right, float(i) / float(n - 1))
 		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, passengers[i])
