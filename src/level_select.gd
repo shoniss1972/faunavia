@@ -24,44 +24,41 @@ func _add_label(parent: Node, text: String, size: int, colour := TEXT_DARK) -> L
 
 
 func _build() -> void:
+	# A fixed grid that fits every level on one screen — no scrolling, which is
+	# unreliable over buttons on mobile web (iOS in particular).
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 40)
+		margin.add_theme_constant_override("margin_" + side, 32)
 	add_child(margin)
 
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 16)
+	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
 
-	_add_label(column, "FAUNAVIA", 38)
-	_add_label(column, "Wildlife Rescue — pick a mission", 20)
-	_add_label(column, "★ %d / %d stars" % [GameState.total_stars(), Levels.count() * 3], 22, STAR_GOLD)
-	_add_label(column, "Stars: deliver · keep them calm · thrill them", 17)
+	_add_label(column, "FAUNAVIA — Wildlife Rescue", 30)
+	_add_label(column, "★ %d / %d    ·    deliver · keep them calm · thrill them" % [
+		GameState.total_stars(), Levels.count() * 3], 17, STAR_GOLD)
 
 	if GameState.last_earned >= 0:
-		_add_label(column, "Last rescue: %s earned!" % _stars_str(GameState.last_earned), 20, STAR_GOLD)
+		_add_label(column, "Last rescue: %s earned!" % _stars_str(GameState.last_earned), 18, STAR_GOLD)
 		GameState.last_earned = -1
 
-	if GameState.all_complete():
-		_add_label(column, "Every animal rescued — replay any level for three stars!", 19)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
-
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 12)
-	scroll.add_child(list)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	column.add_child(grid)
 
 	for i in Levels.count():
 		var unlocked := GameState.is_unlocked(i)
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(0, 92)
+		btn.custom_minimum_size = Vector2(0, 128)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 22)
+		btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.add_theme_font_size_override("font_size", 19)
 		btn.disabled = not unlocked
 		var lvl: Dictionary = Levels.get_level(i)
 		if unlocked:
@@ -69,11 +66,11 @@ func _build() -> void:
 			btn.pressed.connect(_on_level_chosen.bind(i))
 		else:
 			btn.text = "%s\n🔒 Locked" % lvl["title"]
-		list.add_child(btn)
+		grid.add_child(btn)
 
 	var reset := Button.new()
-	reset.custom_minimum_size = Vector2(0, 70)
-	reset.add_theme_font_size_override("font_size", 18)
+	reset.custom_minimum_size = Vector2(0, 60)
+	reset.add_theme_font_size_override("font_size", 16)
 	reset.text = "Reset progress"
 	reset.pressed.connect(_on_reset)
 	column.add_child(reset)
