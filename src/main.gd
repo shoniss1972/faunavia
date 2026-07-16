@@ -1,18 +1,19 @@
 extends Control
 
-const TRACK_LENGTH := 2200.0
+const TRACK_BUFFER := 160.0          # ground drawn past the sanctuary
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FUEL_PICKUP_AMOUNT := 45.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
 
-# Route stops along the track. Levels may override with their own list; the
-# default is a fuel stop, a food store, and the sanctuary finish.
+# Route stops as fractions of the track length, so they scale with each level's
+# length. Levels may override with their own list. Default: a fuel stop, a food
+# store, and the sanctuary finish.
 const DEFAULT_ROUTE := [
-	{"type": "fuel", "x": 950.0},
-	{"type": "food", "x": 1500.0},
-	{"type": "sanctuary", "x": 2050.0},
+	{"type": "fuel", "at": 0.45},
+	{"type": "food", "at": 0.70},
+	{"type": "sanctuary", "at": 1.0},
 ]
 const NODE_STYLE := {
 	"fuel": {"label": "FUEL", "colour": "#efb64d"},
@@ -49,8 +50,12 @@ var speed := 0.0
 var fuel := 100.0
 var drive_pressed := false
 var brake_pressed := false
-var route: Array = DEFAULT_ROUTE
+var route: Array = []
 var nodes_used := {}
+var track_len := 2050.0
+var track_rough := 1.0
+var track_phase := 0.0
+var track_freq := 1.0
 var finished := false
 var body_y := 0.0
 var body_vy := 0.0
@@ -118,7 +123,7 @@ func _process(delta: float) -> void:
 	# burns more per pixel. Speed is a comfort concern, not a fuel one.
 	var dist := speed * delta
 	fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
-	vehicle_x = min(vehicle_x + dist, TRACK_LENGTH)
+	vehicle_x = min(vehicle_x + dist, track_len + TRACK_BUFFER)
 
 	_check_route_nodes()
 
@@ -245,11 +250,15 @@ func _update_suspension(delta: float) -> void:
 
 
 func terrain_y(world_x: float) -> float:
-	return 790.0 + sin(world_x * 0.007) * 75.0 + sin(world_x * 0.018) * 28.0
+	# Per-level track: rough scales hill height, freq scales hill spacing, and
+	# phase shifts where the hills fall, so each level reads as its own route.
+	var t := world_x + track_phase
+	return 790.0 + sin(t * 0.007 * track_freq) * 75.0 * track_rough \
+		+ sin(t * 0.018 * track_freq) * 28.0 * track_rough
 
 
 func _draw() -> void:
-	var camera_x: float = clamp(vehicle_x - 220.0, 0.0, TRACK_LENGTH - size.x)
+	var camera_x: float = clamp(vehicle_x - 220.0, 0.0, maxf(0.0, track_len + TRACK_BUFFER - size.x))
 
 	# Sky and distant hills.
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#dcefd8"))
@@ -453,6 +462,16 @@ func _on_brake_up() -> void:
 
 
 func _reset_run() -> void:
+	var lvl: Dictionary = Levels.get_level(GameState.current_level)
+	track_len = lvl.get("length", 2050.0)
+	track_rough = lvl.get("rough", 1.0)
+	track_phase = lvl.get("phase", 0.0)
+	track_freq = lvl.get("freq", 1.0)
+	route = []
+	for node in lvl.get("route", DEFAULT_ROUTE):
+		route.append({"type": node["type"], "x": float(node["at"]) * track_len})
+	nodes_used = {}
+
 	passengers = GameState.loadout_animals.duplicate()
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
@@ -478,8 +497,6 @@ func _reset_run() -> void:
 	advancing = false
 	drive_pressed = false
 	brake_pressed = false
-	route = Levels.get_level(GameState.current_level).get("route", DEFAULT_ROUTE)
-	nodes_used = {}
 	finished = false
 	fuel_label.text = "Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)
 	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]

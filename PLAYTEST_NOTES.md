@@ -143,10 +143,15 @@ several automated "validations" could not give — and it pushed back hard.
   1. Sanctua truncation — trivial marker-width fix. [done]
   2. Animals look the same — give each a distinct silhouette (ears, shell, beak,
      horns), not just colour.
-  3. Fuel is invisible/pointless — either make it genuinely bite (some levels
-     unreachable without the stop; overloading can strand) or cut it. Design fork.
+  3. Fuel STAYS (owner decision). It reads as pointless today because the fuel
+     stop sits on the only road and can't be missed. The intended fix is
+     branching routes: a shortcut/alternate path that skips the fuel stop, so
+     taking it becomes a real fuel gamble. Flagged as a major revision — the
+     target for fuel depth, not built yet. Per-track variety below is the first
+     step toward it.
   4. Driving doesn't matter — make comfort consequential and legible in the
-     moment (live mood read, real stakes), not just a post-hoc star. Design fork.
+     moment (live mood read, real stakes), not just a post-hoc star. Still open.
   5. Levels short and identical — vary the track per level (length, hills,
-     roughness). Biggest boredom lever; also makes driving skill and fuel matter.
-- Remove: nothing yet — but be willing to cut fuel if it can't be made to matter.
+     roughness). Owner priority. Biggest boredom lever; also gives driving skill
+     and fuel real teeth. BUILDING NOW, alongside distinct animal silhouettes.
+- Remove: nothing.
