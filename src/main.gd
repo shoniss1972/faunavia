@@ -73,6 +73,8 @@ const SOLO_HEAD := 0.40            # lone passenger head radius, as a fraction o
 const HEAD_W_PER_RADIUS := 3.5     # nominal sprite width in units of drawn radius
 const HEAD_SPACING := 0.75         # gap between head centres, as a fraction of head width
 const MIN_HEAD := 5.0              # never shrink a head below this, even when crowded
+const MAX_HEAD := 11.0             # nor grow one past this — else a big, near-empty
+                                   # truck bed balloons the animals vs smaller vehicles
 
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
@@ -514,7 +516,7 @@ func _draw_trailer() -> void:
 	if tm > 0:
 		var inner := 44.0
 		var head_w := inner / (1.0 + HEAD_SPACING * float(tm - 1))
-		var tr := maxf(minf(11.0, head_w / HEAD_W_PER_RADIUS), MIN_HEAD)
+		var tr := clampf(head_w / HEAD_W_PER_RADIUS, MIN_HEAD, MAX_HEAD)
 		var thalf := tr * HEAD_W_PER_RADIUS * 0.5
 		var tleft := -inner * 0.5 + thalf
 		var tright := inner * 0.5 - thalf
@@ -582,7 +584,7 @@ func _crew_head_radius(bw: float, bh: float, n: int) -> float:
 	# revisit.
 	var bed := bw * (SEAT_BACK + CAB_X)
 	var head_w := bed / (1.0 + HEAD_SPACING * float(n - 1))
-	return maxf(minf(bh * SOLO_HEAD, head_w / HEAD_W_PER_RADIUS), MIN_HEAD)
+	return clampf(minf(bh * SOLO_HEAD, head_w / HEAD_W_PER_RADIUS), MIN_HEAD, MAX_HEAD)
 
 
 func _seating_split() -> Array:
@@ -618,7 +620,7 @@ func _draw_passenger(y_offset: float) -> void:
 	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
 	if total == 1:
-		_draw_seat(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, 0)
+		_draw_seat(Vector2(-bw * 0.01, body_top - 12.0) + off, minf(bh * SOLO_HEAD, MAX_HEAD), 0)
 		return
 	# Heads sit wholly between the bed's back edge and the cab, so the cab frame
 	# never crosses a face. Bailed animals keep their slot (drawn leaping away)
