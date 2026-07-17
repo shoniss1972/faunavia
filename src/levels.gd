@@ -1,35 +1,36 @@
 class_name Levels
 extends RefCounted
 
-# Five short missions that escalate the prep puzzle. The gear lessons are
-# ordered so each constraint is introduced alone before it is combined:
-#   1. one placid animal — reteaches the loop with the new prep step
-#   2. two compatible animals — introduces capacity and arrangement
-#   3. lone fox — first equipment gate; the sly fox needs gloves
-#   4. fox + rabbit — incompatibility; needs a divided cage (and still gloves)
-#   5. all three — combines capacity, the cage, and gloves
+# The active campaign is a focused FIVE-mission test path (Gate 5 revision). Each
+# mission asks one distinct question, has its own terrain identity, and motivates
+# the next vehicle by the load it carries:
+#   1 First Rescue      — teach the loop: coax aboard, drive, arrive (wombat, trike)
+#   2 Nervous Passenger — rough driving has a consequence (timid rabbit bails)
+#   3 Which Road?       — a real route choice (safe detour vs rough shortcut)
+#   4 Awkward Companions— compatibility + handling (fox + rabbit: cage + gloves)
+#   5 Heavy Rescue      — a load the jeep can't carry, so the truck earns its place
 #
+# Level fields:
 #   vehicle   — which vehicle runs this level; its capacity holds the cargo
-#   deliver   — animal ids that must be aboard to depart (the mission cargo)
-#   equipment — gear the player may add in prep (each id is a toggle)
-# Track fields shape the drive so no two levels feel the same:
-#   length — finish distance (short early levels, long hauls later)
-#   rough  — hill height multiplier (flat vs hilly; hillier punishes speed)
-#   freq   — hill spacing multiplier
-#   phase  — shifts where the hills fall, so each route looks distinct
+#   deliver   — animal ids that must be aboard (auto-loaded on the prep brief)
+#   equipment — gear the load requires (auto-included; the brief explains why)
+#   routes    — optional [safe, rough] choice surfaced in prep (see prep.gd)
+# Track fields shape the drive so no two missions feel the same:
+#   length — finish distance      rough — hill height (hillier punishes speed)
+#   freq   — hill spacing         phase — shifts where hills fall
 #   route  — optional stop list as fractions of length (default: fuel, food, end)
 const DATA := [
 	{
 		"title": "Level 1 — First Rescue",
 		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
-		"length": 1650.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
-		"brief": "Take the wombat to the sanctuary on the cargo trike.",
+		"length": 1500.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
+		"brief": "Meet the wombat — placid and unbothered. Coax it aboard the cargo trike and roll gently to the sanctuary.",
 	},
 	{
-		"title": "Level 2 — Handle With Care",
-		"vehicle": "bicycle", "deliver": ["fox"], "equipment": ["gloves"],
-		"length": 1750.0, "rough": 0.6, "freq": 1.0, "phase": 300.0,
-		"brief": "The fox is sly. Bring gloves before you load it.",
+		"title": "Level 2 — Nervous Passenger",
+		"vehicle": "bicycle", "deliver": ["rabbit"], "equipment": [],
+		"length": 1700.0, "rough": 0.85, "freq": 1.05, "phase": 300.0,
+		"brief": "The rabbit is timid — every jolt frightens it. Take the bumps slowly, or it may lose its nerve and leap off before you arrive.",
 	},
 	{
 		"title": "Level 3 — Which Road?",
@@ -58,6 +59,47 @@ const DATA := [
 				],
 			},
 		],
+	},
+	{
+		"title": "Level 4 — Awkward Companions",
+		"vehicle": "jeep", "deliver": ["fox", "rabbit"],
+		"equipment": ["divided_cage", "gloves"],
+		"length": 1950.0, "rough": 0.85, "freq": 0.95, "phase": 500.0,
+		"brief": "The fox eyes the rabbit like lunch. A divided cage keeps the peace — and the sly fox needs gloves before you handle it.",
+	},
+	{
+		"title": "Level 5 — Heavy Rescue",
+		"vehicle": "truck", "deliver": ["tortoise", "wombat"], "equipment": ["ramp"],
+		"length": 2600.0, "rough": 1.0, "freq": 0.95, "phase": 700.0,
+		"route": [
+			{"type": "vet", "at": 0.5},
+			{"type": "sanctuary", "at": 1.0},
+		],
+		"brief": "The tortoise and wombat together are too heavy for the jeep — only the truck will do. Pack a ramp so the tortoise can climb aboard, and settle in for the long haul.",
+	},
+]
+
+# The original twelve-level set, kept for development and reference — NOT the
+# active campaign. The five-mission path above is what external testers play; do
+# not use raw level count as evidence the prototype works (see TODO milestone 5).
+const ARCHIVED_LEVELS := [
+	{
+		"title": "Level 1 — First Rescue",
+		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
+		"length": 1650.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
+		"brief": "Take the wombat to the sanctuary on the cargo trike.",
+	},
+	{
+		"title": "Level 2 — Handle With Care",
+		"vehicle": "bicycle", "deliver": ["fox"], "equipment": ["gloves"],
+		"length": 1750.0, "rough": 0.6, "freq": 1.0, "phase": 300.0,
+		"brief": "The fox is sly. Bring gloves before you load it.",
+	},
+	{
+		"title": "Level 3 — Two Aboard",
+		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
+		"length": 1900.0, "rough": 0.8, "freq": 1.05, "phase": 120.0,
+		"brief": "The jeep can carry the wombat and rabbit together.",
 	},
 	{
 		"title": "Level 4 — Keep the Peace",

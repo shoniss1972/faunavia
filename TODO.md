@@ -255,25 +255,31 @@ Target identities:
 - [ ] Verify that a tester can describe at least three animals differently after a
       short session.
 
-### 5. Rebuild the test campaign around five memorable missions
+### 5. Rebuild the test campaign around five memorable missions — DONE (2026-07-18)
 
-Keep the twelve existing levels available for development, but do not use level
-count as evidence that the prototype works. Create a five-mission test path where
-each mission has a distinct question.
+The active campaign (`Levels.DATA`) is now the five-mission path; the twelve are
+kept in `Levels.ARCHIVED_LEVELS` for development, not shown to testers. Star
+totals count only active levels.
 
-Suggested test sequence:
+1. **First Rescue** — wombat, trike; teaches the loop (gentle, 3★ easy).
+2. **Nervous Passenger** — timid rabbit, trike; reckless driving loses it (fail),
+   careful delivers (3★). Makes the bail stake obvious.
+3. **Which Road?** — wombat + rabbit, jeep; the safe-vs-rough route choice.
+4. **Awkward Companions** — fox + rabbit, jeep; divided cage + gloves teach
+   compatibility/handling (the brief now explains each item's purpose).
+5. **Heavy Rescue** — tortoise + wombat, truck; size 5 won't fit the jeep (cap 4),
+   so the truck earns its place. Sturdy load, rough 1.0: reckless 2★, careful 3★.
 
-1. **First Rescue** — Wombat teaches drive, comfort, and arrival.
-2. **Nervous Passenger** — Rabbit makes the rough-driving consequence obvious.
-3. **Which Road?** — safe detour versus rough shortcut.
-4. **Unhappy Travelling Companions** — a real compatibility/separation choice.
-5. **Heavy Rescue** — the load creates a visible reason for a different vehicle.
+- [x] Each mission introduces only one major new idea.
+- [x] Each mission has a distinct visual/terrain identity (length/rough/freq/phase).
+- [x] Each mission ends with a reason to retry or continue — verified by driving:
+      M2 reckless fails; M5 reckless 2★; the result screen names the fix.
+- [x] Cut/park missions that just repeat a manifest with larger numbers (the
+      original 12 are archived, not deleted).
 
-- [ ] Each mission introduces only one major new idea.
-- [ ] Each mission has a distinct visual/terrain identity.
-- [ ] Each mission ends with a clear reason to retry or continue.
-- [ ] Cut, merge, or park missions that merely repeat a manifest with larger
-      numbers.
+Note: milestone 4 (memorable per-animal identities) is only lightly touched here
+via the mission briefs; its explicit trait-badge / describe-three-animals tasks
+remain open. Human playtest still needed to confirm the arc reads unaided.
 
 ### 6. Make vehicle progression solve visible problems
 

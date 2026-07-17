@@ -59,16 +59,19 @@ func record_result(index: int, earned: int, detail: Dictionary = {}) -> void:
 
 
 func total_stars() -> int:
+	# Count only the active campaign; a save from a longer campaign may hold extra
+	# trailing entries that should not inflate the "X / max" readout.
+	_ensure_stars()
 	var t := 0
-	for s in stars:
-		t += int(s)
+	for i in Levels.count():
+		t += int(stars[i])
 	return t
 
 
 func all_complete() -> bool:
 	_ensure_stars()
-	for s in stars:
-		if int(s) < 1:
+	for i in Levels.count():
+		if int(stars[i]) < 1:
 			return false
 	return true
 
