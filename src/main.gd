@@ -377,8 +377,26 @@ func _advance_after_delivery() -> void:
 				break
 		if smooth:
 			earned = 3
-	GameState.record_result(GameState.current_level, earned)
-	get_tree().change_scene_to_file("res://src/level_select.tscn")
+
+	# Hand the run's per-passenger outcome to the result screen so it can explain
+	# the rating and give a hint pointed at what actually went wrong.
+	var roster: Array = []
+	for i in total:
+		roster.append({
+			"id": passengers[i],
+			"name": Animals.display_name(passengers[i]),
+			"arrived": not bailed[i],
+			"rattled": ever_annoyed[i],
+		})
+	var detail := {
+		"level": GameState.current_level,
+		"earned": earned,
+		"total": total,
+		"delivered": delivered,
+		"passengers": roster,
+	}
+	GameState.record_result(GameState.current_level, earned, detail)
+	get_tree().change_scene_to_file("res://src/result.tscn")
 
 
 func _load_line() -> String:

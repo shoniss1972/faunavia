@@ -21,6 +21,10 @@ var loadout_trailer := false
 # Best stars earned per level (0 = not yet completed). Persisted between runs.
 var stars: Array = []
 var last_earned := -1              # stars from the most recent delivery, for a toast
+# Full detail of the most recent run, for the result screen. Rebuilt each
+# delivery; not persisted. Shape: {level, earned, total, delivered,
+# passengers:[{id,name,arrived,rattled}]}.
+var last_result: Dictionary = {}
 
 
 func _ready() -> void:
@@ -42,9 +46,10 @@ func is_unlocked(index: int) -> bool:
 	return index < stars.size() and stars[index - 1] >= 1
 
 
-func record_result(index: int, earned: int) -> void:
+func record_result(index: int, earned: int, detail: Dictionary = {}) -> void:
 	_ensure_stars()
 	last_earned = earned
+	last_result = detail
 	if index >= 0 and index < stars.size():
 		stars[index] = maxi(stars[index], earned)
 	_save()
