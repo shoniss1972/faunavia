@@ -17,6 +17,9 @@ var current_level := 0
 var loadout_animals: Array[String] = []
 var loadout_equipment: Array[String] = []
 var loadout_trailer := false
+# The route chosen in prep on levels that offer a choice; empty for single-route
+# levels (the drive then falls back to the level's own terrain fields).
+var loadout_route: Dictionary = {}
 
 # Best stars earned per level (0 = not yet completed). Persisted between runs.
 var stars: Array = []
@@ -88,6 +91,11 @@ func set_loadout(animals: Array[String], equipment: Array[String], trailer := fa
 	loadout_animals = animals.duplicate()
 	loadout_equipment = equipment.duplicate()
 	loadout_trailer = trailer
+
+
+func set_route(route: Dictionary) -> void:
+	# Empty clears any route chosen for a previous level.
+	loadout_route = route.duplicate(true)
 
 
 func current_vehicle() -> String:

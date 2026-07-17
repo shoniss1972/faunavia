@@ -18,6 +18,11 @@ var equipment: Array[String] = []
 var trailer := false
 var capacity := 0
 
+# Route choice (only on levels that offer one; see levels.gd "routes").
+var route_options: Array = []
+var chosen_route := 0
+var route_buttons: Array[Button] = []
+
 
 func _ready() -> void:
 	level = Levels.get_level(GameState.current_level)
@@ -33,6 +38,7 @@ func _solve_loadout() -> void:
 	equipment.assign(level["equipment"])
 	trailer = level.get("trailer", false)
 	capacity = int(Vehicles.get_data(level["vehicle"])["capacity"])
+	route_options = level.get("routes", [])
 
 
 func _make_root_column() -> VBoxContainer:
@@ -90,6 +96,9 @@ func _build_brief() -> void:
 			_add_manifest_row(column, Color("#8a8f84"),
 				"Trailer  ·  +%d slots — the load won't fit without it." % GameState.TRAILER_CAPACITY, row_h)
 
+	if not route_options.is_empty():
+		_build_route_chooser(column)
+
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
@@ -114,6 +123,41 @@ func _build_brief() -> void:
 	depart_button.text = "DEPART"
 	depart_button.pressed.connect(_on_depart)
 	buttons.add_child(depart_button)
+
+
+func _build_route_chooser(column: Node) -> void:
+	# The one place prep is a real decision: two valid routes with a trade-off the
+	# player weighs against the passengers shown above (a timid animal favours the
+	# gentle road; a confident driver can gamble on the shortcut).
+	_add_label(column, "— CHOOSE THE ROUTE —", 16, MUTED)
+	var group := ButtonGroup.new()
+	route_buttons.clear()
+	for i in route_options.size():
+		var btn := Button.new()
+		btn.toggle_mode = true
+		btn.button_group = group
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.custom_minimum_size = Vector2(0, 92)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.add_theme_font_size_override("font_size", 17)
+		btn.toggled.connect(_on_route_toggled.bind(i))
+		column.add_child(btn)
+		route_buttons.append(btn)
+	route_buttons[chosen_route].button_pressed = true
+	_refresh_route_buttons()
+
+
+func _on_route_toggled(pressed: bool, index: int) -> void:
+	if pressed:
+		chosen_route = index
+		_refresh_route_buttons()
+
+
+func _refresh_route_buttons() -> void:
+	for i in route_buttons.size():
+		var opt: Dictionary = route_options[i]
+		var mark := "●  " if i == chosen_route else "○  "
+		route_buttons[i].text = "%s%s — %s" % [mark, opt["label"], opt["desc"]]
 
 
 func _add_manifest_row(parent: Node, swatch_colour: Color, text: String, height: int) -> void:
@@ -160,6 +204,7 @@ func _gear_reason(eq: String) -> String:
 
 func _on_depart() -> void:
 	GameState.set_loadout(animals, equipment, trailer)
+	GameState.set_route(route_options[chosen_route] if not route_options.is_empty() else {})
 	get_tree().change_scene_to_file("res://src/main.tscn")
 
 

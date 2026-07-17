@@ -32,10 +32,32 @@ const DATA := [
 		"brief": "The fox is sly. Bring gloves before you load it.",
 	},
 	{
-		"title": "Level 3 — Two Aboard",
+		"title": "Level 3 — Which Road?",
 		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
 		"length": 1900.0, "rough": 0.8, "freq": 1.05, "phase": 120.0,
-		"brief": "The jeep can carry the wombat and rabbit together.",
+		"brief": "Two roads to the sanctuary. The rabbit is timid — pick the route that suits your passengers.",
+		# A real choice: the gentle road is slow but kind and has a feeding stop;
+		# the shortcut is quick but rough, and a nervous animal may not survive it
+		# unless you crawl. Whichever is picked feeds the drive via loadout_route.
+		"routes": [
+			{
+				"label": "Safe road",
+				"desc": "Longer but forgiving — an early feeding stop keeps nervous animals aboard. Drive it smoothly for all three stars.",
+				"length": 2400.0, "rough": 0.6, "freq": 1.0, "phase": 120.0,
+				"route": [
+					{"type": "food", "at": 0.3},
+					{"type": "sanctuary", "at": 1.0},
+				],
+			},
+			{
+				"label": "Rough shortcut",
+				"desc": "Half the distance, sharp hills, no stops. Quicker if you're deft — but a timid animal bails if you rush it.",
+				"length": 1450.0, "rough": 1.0, "freq": 1.1, "phase": 300.0,
+				"route": [
+					{"type": "sanctuary", "at": 1.0},
+				],
+			},
+		],
 	},
 	{
 		"title": "Level 4 — Keep the Peace",

@@ -759,12 +759,15 @@ func _on_brake_up() -> void:
 
 func _reset_run() -> void:
 	var lvl: Dictionary = Levels.get_level(GameState.current_level)
-	track_len = lvl.get("length", 2050.0)
-	track_rough = lvl.get("rough", 1.0)
-	track_phase = lvl.get("phase", 0.0)
-	track_freq = lvl.get("freq", 1.0)
+	# On a level that offered a route choice, the picked route carries its own
+	# terrain and stops; otherwise the level's own fields drive the track.
+	var track_src: Dictionary = GameState.loadout_route if not GameState.loadout_route.is_empty() else lvl
+	track_len = track_src.get("length", 2050.0)
+	track_rough = track_src.get("rough", 1.0)
+	track_phase = track_src.get("phase", 0.0)
+	track_freq = track_src.get("freq", 1.0)
 	route = []
-	for node in lvl.get("route", DEFAULT_ROUTE):
+	for node in track_src.get("route", DEFAULT_ROUTE):
 		if not FUEL_ENABLED and node["type"] == "fuel":
 			continue
 		route.append({"type": node["type"], "x": float(node["at"]) * track_len})

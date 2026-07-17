@@ -204,23 +204,35 @@ Example continuation language:
 **Acceptance test:** Without explanation, a player knows what happened, why they
 received that rating, what to change, and why continuing may be interesting.
 
-### 3. Build one genuine route decision
+### 3. Build one genuine route decision — DONE (2026-07-18)
 
-Do not first build a complex general route engine. Prove the decision with one
-mission and a simple pre-drive route selection if necessary.
+Level 3 is now "Which Road?" (wombat + timid rabbit). The prep brief offers two
+routes; the pick feeds the drive via `GameState.loadout_route`.
 
-- [ ] Add one mission with two clearly different valid routes:
-  - **Rough shortcut:** shorter, sharper terrain, no food/vet help, greater comfort
-    risk.
-  - **Safe road:** longer, gentler terrain, includes a food or vet stop, and later
-    carries a fuel cost once fuel returns.
-- [ ] Show the relevant animal traits alongside the route choice.
-- [ ] Make the consequences perceptible during the drive and in the result.
-- [ ] Avoid a hidden correct answer: each route should be attractive under some
-      load or objective.
+- [x] Two clearly different valid routes:
+  - **Rough shortcut:** 1450px, rough 1.0, no stops — greater comfort risk.
+  - **Safe road:** 2400px, rough 0.6, early feeding stop (later a fuel cost once
+    fuel returns).
+- [x] Relevant traits shown alongside the choice — the manifest lists the rabbit
+      as "timid" directly above the route buttons, and the brief calls it out.
+- [x] Consequences perceptible in the drive (terrain shape, the food stop, a bail)
+      and the result (stars + who arrived/rattled/bailed).
+- [x] No hidden correct answer. Verified by driving the shipped data:
+      | driving  | safe road      | rough shortcut     |
+      | reckless | 2★ (10.1s)     | 1★, rabbit bails (6.4s) |
+      | careful  | 3★ (21.4s)     | 2★ (12.8s)         |
+      | expert   | 3★ (29.0s)     | 3★ (17.2s)         |
+      Safe road guarantees delivery (2★ floor, never lose an animal); the shortcut
+      risks the rabbit but is the FASTER path to 3★ for a skilled driver.
 
-**Acceptance test:** The player sees a timid rabbit and independently reasons
-that the safer route may be worth taking.
+**Acceptance test:** met in principle — a timid rabbit makes the safe road the
+sensible pick, without making the shortcut a trap. Wants a human playtest to
+confirm players read the trade-off unaided.
+
+CAVEAT — honest state: with fuel disabled, the shortcut's only scored edge is
+that its 3★ is faster/shorter; the safe road has no scored *cost* yet, just its
+length. The trade-off is real but completes when fuel returns (milestone 10) and
+prices the long road. Do not over-tune around this now.
 
 ### 4. Give every animal one memorable gameplay identity
 
