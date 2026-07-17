@@ -76,9 +76,28 @@
       choice from Gate 3 changes how the drive *feels*, not just what it weighs.
       Feeds the tester's "driving style doesn't seem to make any difference"
       (item 4 below): variance is what makes a reaction legible as a *reaction*.
-- [ ] Make driving consequential in the moment (Gate 5 item 4). Still open. The
-      animals now carry real expressions, so the signal exists — what is missing
-      is a stake attached to it.
+- [ ] **KEYSTONE — give comfort a real in-the-moment stake.** Rough driving
+      drains comfort but costs nothing, so the "oof" is decoration (Gate 5 item 4,
+      still open). Attach a consequence the player sees live: a payout that drains
+      as comfort drops, a patience meter that can end the run, or an animal that
+      bails at zero — pick one and make it legible on screen. The owner replay
+      (2026-07-18) showed this one fix is upstream of four separate complaints —
+      see below.
+- [ ] Prep screen is administrative, not a decision (owner replay). Downstream of
+      the keystone: once rough roads have a cost, loadout choices trade against it
+      (which animals tolerate this route, is the calming feed worth a slot). Do
+      NOT redesign prep before the keystone lands — if it still feels like a
+      checklist after, cut the click-aboard step to an auto-load.
+- [ ] Food and vet signs feel meaningless (owner replay). They restore/repair
+      comfort, which is imperceptible while comfort has no stake. The keystone
+      makes them a lifeline worth reaching; revisit their placement then.
+- [ ] Vehicle progression doesn't relate to the load (owner replay). Tie the
+      bicycle→jeep→truck line to a pressure the load creates — e.g. suspension
+      that rides smoother, so a bigger vehicle is a gentler ride for a fragile
+      cargo, not just more slots. Downstream of the keystone.
+- [ ] Landscape is barren (owner replay). Independent of the keystone — pure
+      scenery/juiciness now that the 2x camera shows the empty world. Add
+      parallax features, foreground props, roadside detail. Cheap; do alongside.
 - [ ] Branching routes so the fuel stop can be missed (Gate 5 item 3). Fuel is
       disabled behind `FUEL_ENABLED` in main.gd until this lands.
 

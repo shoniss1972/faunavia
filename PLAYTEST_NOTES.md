@@ -156,3 +156,69 @@ several automated "validations" could not give — and it pushed back hard.
      roughness). Owner priority. Biggest boredom lever; also gives driving skill
      and fuel real teeth. BUILDING NOW, alongside distinct animal silhouettes.
 - Remove: nothing.
+
+---
+
+## Gate 5 — owner replay after art + camera pass — 2026-07-18
+
+Owner played several times after the animal sprites, the 2x zoom camera, and the
+crew-seating fixes landed. The art complaint (#2) is closed — the animals read as
+distinct creatures and the expressions are liked. What surfaced next is deeper
+and more coherent than the first round.
+
+### Observation (owner)
+
+- Prep screen has no purpose. You must click every animal and item aboard to
+  advance, but there is no decision in it and it is not fun — it is a checklist
+  gate, not a puzzle.
+- Food and vet route signs seem meaningless. You pass them and nothing you can
+  perceive happens.
+- Landscape is barren — now that the camera is close, the empty world shows.
+  Wants environmental features.
+- Vehicle progression (bicycle → jeep → truck) does not make sense or relate to
+  the animal load. Getting the next vehicle is not motivated by a pressure the
+  load creates.
+- Expressions are cool, but there is no penalty for rough driving that makes the
+  animals "oof" — the reaction has no consequence.
+
+### Reading — one root cause under four of the five
+
+Every observation except the barren landscape is the same disease: **a system
+exists but has no stake.** Comfort is the hub they all hang off, and comfort
+currently costs the player nothing.
+
+- Rough driving drains comfort → but draining comfort does nothing, so the "oof"
+  is decoration. (The direct complaint.)
+- Food/vet signs restore or repair comfort → but you cannot feel a restore of a
+  thing that has no stake, so they read as meaningless.
+- Prep is assembling a loadout → but no loadout choice trades off against a
+  pressure you feel on the drive, so it is a checklist, not a decision.
+- Vehicle progression → not tied to the load, because the load's only felt cost
+  (jostling fragile animals) has no consequence to design a smoother ride
+  against.
+
+So there is ONE keystone: **give comfort a real, in-the-moment stake.** Make
+rough driving cost something the player sees accrue or lose live — a payout that
+drains, a patience meter that can end the run, an animal that bails at zero.
+Doing that lights up four observations at once: the oof gets teeth (#5), the
+food/vet signs become a lifeline worth reaching (#2 signs), prep becomes a real
+decision — which animals tolerate this route, is it worth the calming feed (#1),
+and vehicle choice gains meaning as smoother carriage for a fragile load (#4).
+
+This also REVISES the first round's "keep prep as-is" call: real play says prep
+is administrative, exactly the Gate 3 question ("fun, not administrative?")
+answered honestly. Prep is not wrong — it is unmotivated, and the same keystone
+motivates it.
+
+The barren landscape (#3) is the one separate item: pure juiciness/scenery, not
+a stakes problem. Cheap to improve, independent of the above.
+
+### Decision
+
+- Next keystone: comfort stakes (see TODO). Everything else is downstream of it —
+  resist polishing prep, signs, or vehicles until the drive has a consequence to
+  hang them on.
+- Landscape features: parked as independent polish; do after or alongside, not
+  instead.
+- Remove: nothing yet — but if the keystone does not rescue prep, cutting the
+  click-aboard step to an auto-load is on the table.
