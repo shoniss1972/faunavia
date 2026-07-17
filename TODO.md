@@ -65,50 +65,47 @@
 
 ### Open from the first external test
 
-- [ ] Passenger reaction variance. Comfort is one global 0..100 value, so the
-      whole crew shares a mood: on the five-animal level all five wear the exact
-      same face and change it on the same frame, which reads as a chorus rather
-      than as passengers. Each animal already carries a `temperament` in
-      `Animals.DATA` (placid wombat, timid rabbit, sly fox, slow tortoise, loud
-      parrot, stubborn goat) that does nothing during the drive. Give comfort a
-      per-animal value keyed off temperament — a timid rabbit frets long before a
-      placid wombat notices — so a crew reacts as individuals and the loadout
-      choice from Gate 3 changes how the drive *feels*, not just what it weighs.
-      Feeds the tester's "driving style doesn't seem to make any difference"
-      (item 4 below): variance is what makes a reaction legible as a *reaction*.
-- [ ] **KEYSTONE — an animal bails at zero comfort** (DECIDED 2026-07-18; see
-      PLAYTEST_NOTES). Rough driving drains comfort but costs nothing, so the
-      "oof" is decoration (Gate 5 item 4). The stake: push an animal to zero and
-      it leaps off and trots back down the road. Soft resolution — the run
-      continues and completes, but that animal scores nothing (usually dropping
-      you under the next unlock). One fix, upstream of four complaints below.
-      Bundles the reaction-variance item as a prerequisite:
-      - [ ] Per-animal comfort keyed to temperament (was the variance item). An
-            array of comfort values parallel to `passengers`; each drains at a
-            rate set by its `Animals.DATA` temperament (timid fast, placid slow)
-            off the shared suspension jolt. `passenger_state` becomes per-animal
-            so `_draw_critter` picks each animal's own face.
-      - [ ] Bail at zero: mark the animal bailed, animate it leaving, drop it from
-            the delivered set; run continues.
-      - [ ] Scoring from who arrived (extend the skill-star calc): bailed animals
-            contribute nothing; stars reflect delivered animals and their comfort.
-      - [ ] Food/vet signs restore per-animal comfort so reaching one saves an
-            animal from the brink — makes the signs a lifeline (fixes the
-            "meaningless signs" complaint directly).
-      - [ ] Telegraph: make the approach to zero and the bail itself read (annoyed
-            face already exists; may want an escalating "about to jump" cue).
-- [ ] Prep screen is administrative, not a decision (owner replay). Downstream of
-      the keystone: once rough roads have a cost, loadout choices trade against it
-      (which animals tolerate this route, is the calming feed worth a slot). Do
-      NOT redesign prep before the keystone lands — if it still feels like a
-      checklist after, cut the click-aboard step to an auto-load.
-- [ ] Food and vet signs feel meaningless (owner replay). They restore/repair
-      comfort, which is imperceptible while comfort has no stake. The keystone
-      makes them a lifeline worth reaching; revisit their placement then.
-- [ ] Vehicle progression doesn't relate to the load (owner replay). Tie the
-      bicycle→jeep→truck line to a pressure the load creates — e.g. suspension
-      that rides smoother, so a bigger vehicle is a gentler ride for a fragile
-      cargo, not just more slots. Downstream of the keystone.
+- [x] **KEYSTONE — an animal bails at zero comfort** (DONE 2026-07-18, commit
+      d2601b7; see PLAYTEST_NOTES). Rough driving now costs you an animal. Comfort
+      is per-passenger, keyed to temperament off the shared suspension jolt (timid
+      rabbit frets and bails long before the placid wombat is bothered); at zero
+      the animal hops off and the run continues but it scores nothing. Stars: 0
+      empty / 1 someone-bailed / 2 all-arrived / 3 all-arrived-none-annoyed.
+      Food/vet signs restore per-animal comfort (a lifeline); over-cab emote
+      escalates to "About to jump!". This also folded in the old reaction-variance
+      item — the crew now reacts as individuals. Verified by driving: careful vs
+      reckless is a real star gradient, no level unwinnable.
+
+  IMPORTANT — the keystone made the drive consequential, but it did NOT by itself
+  fix the prep / signs / vehicle complaints below. It is the PRECONDITION that
+  makes those worth building as real choices; the choices themselves still do not
+  exist. The player currently has no control over loadout or vehicle — both are
+  fixed per level (prep.gd iterates `level["deliver"]`/`["equipment"]`/`["vehicle"]`).
+  Each item below is now its own design-and-build task, not a knock-on.
+
+- [ ] Signs feel meaningless — PARTLY ADDRESSED. Food/vet now restore per-animal
+      comfort, so reaching one saves an animal from the brink (the code path and
+      "steadied just in time!" message exist). Still to confirm in real play that
+      they READ as a lifeline; may need placement tuning (a sign right after a
+      rough stretch) and a clearer on-pass cue. Re-drive and judge.
+- [ ] Prep is administrative — NEEDS A CHOICE BUILT. Today prep is a confirm
+      gate: the manifest is mandatory (`level["deliver"]` + required equipment),
+      so there is nothing to decide. The keystone only makes a decision *worth*
+      having; it does not create one. To make prep a real decision, add player
+      freedom the stake can price, e.g.:
+        - optional calming feed that costs a cargo slot but slows comfort drain →
+          on a rough route, weigh feed vs another animal;
+        - levels that offer more animals than capacity → choose who rides now;
+        - a route/vehicle pick (below) surfaced at prep.
+      Separate design work; not started. If we choose not to build a choice, the
+      honest fallback is to cut the click-aboard step to an auto-load.
+- [ ] Vehicle doesn't relate to the load — NEEDS A CHOICE BUILT. Vehicle is
+      assigned per level (`level["vehicle"]`) and its stats are only speed/accel/
+      fuel — nothing comfort-related, so a bigger vehicle is not a gentler ride.
+      The keystone gives this meaning only once a choice or a felt difference
+      exists. Options: add a suspension/smoothness stat so the truck rides gentler
+      for fragile cargo, and/or let the player pick among unlocked vehicles so
+      "which vehicle for this load" becomes a real tradeoff. Not started.
 - [ ] Landscape is barren (owner replay). Independent of the keystone — pure
       scenery/juiciness now that the 2x camera shows the empty world. Add
       parallax features, foreground props, roadside detail. Cheap; do alongside.
