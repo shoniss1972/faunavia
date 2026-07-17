@@ -1,5 +1,68 @@
 # Faunavia Prototype TODO
 
+## Product direction — current truth (2026-07-18)
+
+Faunavia is now a functioning vertical-slice prototype. The next phase is **not**
+to add more systems or content. It is to prove that the existing idea is
+interesting, understandable, replayable, and worth continuing.
+
+### Core player promise
+
+> **Choose a sensible rescue plan, then drive well enough that every
+> opinionated animal stays aboard.**
+
+Every feature must strengthen at least one of these four things:
+
+1. **Plan** — make a real choice before or during the rescue.
+2. **Drive** — read the terrain and control the vehicle with intent.
+3. **Animals** — understand and care about distinct passengers.
+4. **Reward** — know what happened, why it mattered, and what comes next.
+
+Anything that does not serve one of those should be removed, automated, or
+deferred.
+
+### The three motivations the game must communicate
+
+- **During the drive:** Can I keep everyone aboard?
+- **At the result:** Can I improve this rescue and earn the missing star?
+- **Across the campaign:** What new animal, route, or vehicle problem comes next?
+
+The player should never need the designer to explain those motivations.
+
+### Design rules for the next build
+
+- **Never ask the player to click the only correct answer.**
+- Do not keep a mechanic merely because it has already been implemented.
+- No meter, route stop, item, screen, or stat without a visible stake.
+- Prefer one memorable rule per animal over many small numerical differences.
+- Prefer five excellent, distinct missions over twelve mechanically complete but
+  similar missions.
+- Do not add economy, upgrade trees, more animals, more equipment, or more levels
+  until unfamiliar players understand the loop and voluntarily retry.
+- Make consequences playful and clear: annoyance, refusal, bailing, lost stars,
+  and missed opportunities — never injury or distress.
+
+## Current prototype state
+
+Implemented on `main`:
+
+- 12 missions with varied lengths and terrain profiles.
+- Cargo trike, jeep, truck, and trailer.
+- Six animal species with size, weight, temperament, compatibility, equipment
+  requirements, distinct sprites, and three moods.
+- Level select, prep screen, stars, sequential unlocks, and saved progress.
+- Keyboard and touch controls, portrait mobile layout, and HTML5 export.
+- Per-animal comfort keyed to temperament.
+- Rough driving can make an animal bail at zero comfort; the run continues but
+  loses delivery credit and stars.
+- Food and vet route nodes restore comfort.
+- Fuel exists but is disabled behind `FUEL_ENABLED` until route choice makes it
+  meaningful.
+
+The key remaining weakness is not lack of functionality. It is that several
+implemented systems still do not create real choices or clearly explain why the
+player should replay or continue.
+
 ## Gate 0 — Project boots
 
 - [x] Initialise repository.
@@ -18,107 +81,285 @@
 - [x] Add stable, deliberately simplified wheel and suspension behaviour.
 - [x] Add fuel consumption and one fuel pickup.
 - [x] Add a finish point and restart control.
-- [ ] Test keyboard and touch controls. (Keyboard verified; touch buttons wired but untested on a device.)
+- [ ] Test touch controls on at least one real phone. Keyboard is verified; touch
+      buttons are wired but not yet proven on-device.
 
 ## Gate 2 — First passenger
 
-**Question:** Does carrying an expressive animal materially improve the driving loop?
+**Question:** Does carrying an expressive animal materially improve the driving
+loop?
 
 - [x] Add one animal passenger.
 - [x] Add animal weight to vehicle handling.
-- [x] Track a simple comfort state based on rough travel.
+- [x] Track comfort based on rough travel.
 - [x] Show at least three reactions: content, annoyed, delighted.
 - [x] Add a humorous loading interaction.
 - [x] Complete five internal playthroughs and record observations.
+- [x] Make comfort consequential: an animal bails at zero.
+- [x] Make comfort per-animal and temperament-sensitive.
 
 ## Gate 3 — Logistics puzzle
 
-**Question:** Is preparation and animal arrangement fun, rather than administrative?
+**Question:** Is preparation and animal arrangement fun, rather than
+administrative?
 
 - [x] Add three animal types with size, weight, and temperament traits.
 - [x] Add vehicle capacity.
 - [x] Add one incompatibility rule.
 - [x] Add a divided cage that resolves the incompatibility.
-- [x] Add one equipment requirement from nets, leashes, gloves, feed, or ramp.
+- [x] Add equipment requirements.
 - [x] Add a basic mission preparation screen.
 - [x] Build five short levels.
+- [ ] Re-answer the Gate 3 question honestly. Current answer: **no**. The screen
+      validates a predetermined manifest rather than offering a decision.
 
 ## Gate 4 — Progression slice
 
 **Question:** Do players want the next vehicle and mission?
 
-- [x] Add bicycle, jeep, and truck.
+- [x] Add cargo trike, jeep, and truck.
 - [x] Add one trailer.
 - [x] Add fuel, food store, vet station, and sanctuary route nodes.
 - [x] Add stars and level unlocks.
 - [x] Add six animals total.
 - [x] Build 10–15 levels. (12 levels)
 - [x] Add basic save progress.
+- [ ] Make the next mission and vehicle desirable rather than merely unlocked.
+- [ ] Show the player what new problem, character, route, or capability is coming.
 
 ## Gate 5 — External phone test
 
-- [ ] Produce a phone-playable build.
+- [ ] Produce and verify a phone-playable build on real devices.
 - [ ] Test with at least 10 unfamiliar players.
-- [ ] Observe without explaining controls or rules.
+- [ ] Observe without explaining controls, rules, scoring, or progression.
 - [ ] Record completion, replay, confusion, smiles, and requests for more.
 - [ ] Make an explicit continue, revise, or stop decision.
 
-### Open from the first external test
+### Gate 5 success evidence
 
-- [x] **KEYSTONE — an animal bails at zero comfort** (DONE 2026-07-18, commit
-      d2601b7; see PLAYTEST_NOTES). Rough driving now costs you an animal. Comfort
-      is per-passenger, keyed to temperament off the shared suspension jolt (timid
-      rabbit frets and bails long before the placid wombat is bothered); at zero
-      the animal hops off and the run continues but it scores nothing. Stars: 0
-      empty / 1 someone-bailed / 2 all-arrived / 3 all-arrived-none-annoyed.
-      Food/vet signs restore per-animal comfort (a lifeline); over-cab emote
-      escalates to "About to jump!". This also folded in the old reaction-variance
-      item — the crew now reacts as individuals. Verified by driving: careful vs
-      reckless is a real star gradient, no level unwinnable.
+The prototype earns expansion only when unfamiliar players can:
 
-  IMPORTANT — the keystone made the drive consequential, but it did NOT by itself
-  fix the prep / signs / vehicle complaints below. It is the PRECONDITION that
-  makes those worth building as real choices; the choices themselves still do not
-  exist. The player currently has no control over loadout or vehicle — both are
-  fixed per level (prep.gd iterates `level["deliver"]`/`["equipment"]`/`["vehicle"]`).
-  Each item below is now its own design-and-build task, not a knock-on.
+- explain why an animal became upset or bailed;
+- explain why they chose a route, vehicle, or optional aid;
+- understand the star result without explanation;
+- identify what they could do differently for a better result;
+- retry voluntarily after a weak result;
+- express curiosity about the next animal, route, or vehicle.
 
-- [ ] Signs feel meaningless — PARTLY ADDRESSED. Food/vet now restore per-animal
-      comfort, so reaching one saves an animal from the brink (the code path and
-      "steadied just in time!" message exist). Still to confirm in real play that
-      they READ as a lifeline; may need placement tuning (a sign right after a
-      rough stretch) and a clearer on-pass cue. Re-drive and judge.
-- [ ] Prep is administrative — NEEDS A CHOICE BUILT. Today prep is a confirm
-      gate: the manifest is mandatory (`level["deliver"]` + required equipment),
-      so there is nothing to decide. The keystone only makes a decision *worth*
-      having; it does not create one. To make prep a real decision, add player
-      freedom the stake can price, e.g.:
-        - optional calming feed that costs a cargo slot but slows comfort drain →
-          on a rough route, weigh feed vs another animal;
-        - levels that offer more animals than capacity → choose who rides now;
-        - a route/vehicle pick (below) surfaced at prep.
-      Separate design work; not started. If we choose not to build a choice, the
-      honest fallback is to cut the click-aboard step to an auto-load.
-- [ ] Vehicle doesn't relate to the load — NEEDS A CHOICE BUILT. Vehicle is
-      assigned per level (`level["vehicle"]`) and its stats are only speed/accel/
-      fuel — nothing comfort-related, so a bigger vehicle is not a gentler ride.
-      The keystone gives this meaning only once a choice or a felt difference
-      exists. Options: add a suspension/smoothness stat so the truck rides gentler
-      for fragile cargo, and/or let the player pick among unlocked vehicles so
-      "which vehicle for this load" becomes a real tradeoff. Not started.
-- [ ] Landscape is barren (owner replay). Independent of the keystone — pure
-      scenery/juiciness now that the 2x camera shows the empty world. Add
-      parallax features, foreground props, roadside detail. Cheap; do alongside.
-- [ ] Branching routes so the fuel stop can be missed (Gate 5 item 3). Fuel is
-      disabled behind `FUEL_ENABLED` in main.gd until this lands.
+## Next milestone — prove the fun and the reason to continue
 
-## Deferred until the prototype earns them
+This is the authoritative order of work. Do not skip ahead to upgrades, economy,
+more content, or broad polish.
 
-- Commercial artwork and animation pipeline.
-- Native app-store release work.
-- Advertising, purchases, analytics, accounts, or notifications.
-- Procedural level generation.
-- Water slosh simulation.
-- Free-roaming animal AI or manual capture actions.
-- Multiplayer, social systems, or live events.
-- Large upgrade economy or multiple currencies.
+### 1. Remove fake preparation decisions
+
+**Problem:** The prep screen currently asks the player to select every required
+animal and item. Departure is blocked until they reproduce the predetermined
+answer. That is validation, not gameplay.
+
+- [ ] Auto-load mission-required animals.
+- [ ] Auto-include mandatory safety/handling equipment, or treat it as an unlocked
+      capability rather than a repeated toggle.
+- [ ] Show preparation only when the player has at least two valid plans with a
+      meaningful trade-off.
+- [ ] When no real choice exists, go directly from a concise mission brief to the
+      drive.
+- [ ] Remove any remaining click whose only function is to confirm the one correct
+      answer.
+
+Possible future **real** prep choices, to build one at a time rather than all at
+once:
+
+- optional calming feed occupies capacity but slows comfort loss;
+- more rescue candidates than capacity, requiring a choice of who travels now;
+- route selection based on the animals aboard;
+- vehicle selection where two unlocked vehicles are both valid but behave
+  differently.
+
+**Acceptance test:** A player can explain what they chose, what they gave up, and
+why that mattered on the drive.
+
+### 2. Add a proper result and replay screen
+
+**Problem:** The game currently records stars and returns to level select without
+clearly explaining the result, the improvement path, or the next reward.
+
+- [ ] Add a result screen after each rescue.
+- [ ] Show who arrived and who bailed.
+- [ ] Explain the exact star result in plain language.
+- [ ] Give one specific improvement hint based on the run, not a generic tutorial.
+- [ ] Add clear **Retry for 3 stars** and **Continue** actions.
+- [ ] Preview the next unlock or next mission's new problem.
+
+Example result language:
+
+> **2 stars — Everyone arrived, but Rabbit panicked on the final hill.**
+> Ease off before sharp crests to keep Rabbit calm for all 3 stars.
+
+Example continuation language:
+
+> **Next: Heavy Rescue** — unlock the truck and move a load the jeep cannot carry
+> comfortably.
+
+**Acceptance test:** Without explanation, a player knows what happened, why they
+received that rating, what to change, and why continuing may be interesting.
+
+### 3. Build one genuine route decision
+
+Do not first build a complex general route engine. Prove the decision with one
+mission and a simple pre-drive route selection if necessary.
+
+- [ ] Add one mission with two clearly different valid routes:
+  - **Rough shortcut:** shorter, sharper terrain, no food/vet help, greater comfort
+    risk.
+  - **Safe road:** longer, gentler terrain, includes a food or vet stop, and later
+    carries a fuel cost once fuel returns.
+- [ ] Show the relevant animal traits alongside the route choice.
+- [ ] Make the consequences perceptible during the drive and in the result.
+- [ ] Avoid a hidden correct answer: each route should be attractive under some
+      load or objective.
+
+**Acceptance test:** The player sees a timid rabbit and independently reasons
+that the safer route may be worth taking.
+
+### 4. Give every animal one memorable gameplay identity
+
+Animals already differ in data. The next task is to make players anticipate them
+as characters rather than learn invisible multipliers.
+
+Target identities:
+
+- **Wombat:** forgiving, placid, ideal for learning.
+- **Rabbit:** highly sensitive to bumps; panics early.
+- **Fox:** manageable alone but creates handling and compatibility problems.
+- **Tortoise:** very heavy but emotionally unflappable.
+- **Parrot:** dramatic and lively; can unsettle a nervous companion.
+- **Goat:** stubborn, heavy, and difficult to handle without the right capability.
+
+- [ ] Make each identity visible in mission text, expression, behaviour, or a
+      concise trait badge.
+- [ ] Avoid exposing raw sensitivity multipliers to the player.
+- [ ] Remove or merge traits that players cannot remember or use when deciding.
+- [ ] Verify that a tester can describe at least three animals differently after a
+      short session.
+
+### 5. Rebuild the test campaign around five memorable missions
+
+Keep the twelve existing levels available for development, but do not use level
+count as evidence that the prototype works. Create a five-mission test path where
+each mission has a distinct question.
+
+Suggested test sequence:
+
+1. **First Rescue** — Wombat teaches drive, comfort, and arrival.
+2. **Nervous Passenger** — Rabbit makes the rough-driving consequence obvious.
+3. **Which Road?** — safe detour versus rough shortcut.
+4. **Unhappy Travelling Companions** — a real compatibility/separation choice.
+5. **Heavy Rescue** — the load creates a visible reason for a different vehicle.
+
+- [ ] Each mission introduces only one major new idea.
+- [ ] Each mission has a distinct visual/terrain identity.
+- [ ] Each mission ends with a clear reason to retry or continue.
+- [ ] Cut, merge, or park missions that merely repeat a manifest with larger
+      numbers.
+
+### 6. Make vehicle progression solve visible problems
+
+**Problem:** Vehicles are assigned by level, and the current stats do not make a
+larger vehicle a visibly gentler or more appropriate ride.
+
+Player-facing vehicle qualities should be limited and legible:
+
+- **Capacity** — what it can carry.
+- **Ride** — how strongly terrain jolts reach passengers.
+- **Agility / route suitability** — where it can travel effectively.
+
+- [ ] Add a meaningful ride/suspension quality that changes passenger comfort.
+- [ ] Make the cargo trike bumpy but agile and suitable for light loads.
+- [ ] Make the jeep flexible and average.
+- [ ] Make the truck smoother and capable of heavy/fragile loads, but less agile
+      or otherwise costly.
+- [ ] Introduce vehicle selection only when at least two unlocked vehicles are
+      valid and produce a genuine trade-off.
+- [ ] Explain a new vehicle as a solution to a problem the player has already felt.
+
+**Acceptance test:** A player says why they chose a vehicle in terms of the load
+or route, not simply because it is the newest or biggest.
+
+### 7. Make progression communicate curiosity
+
+- [ ] Replace bare locked-level presentation with teasers for the next new problem
+      or character.
+- [ ] Preview upcoming animals, routes, or vehicles without exposing every rule.
+- [ ] Make the next unlock concrete: what becomes possible, easier, or different?
+- [ ] Ensure a one-star completion can unlock progress, while the result screen
+      makes replay for mastery attractive rather than compulsory.
+
+The progression loop should read as:
+
+> I survived this rescue → I understand how to improve it → the next rescue adds
+> an interesting wrinkle.
+
+### 8. Verify food and vet stops read as lifelines
+
+Food and vet nodes now restore per-animal comfort, but the mechanic still needs a
+real-play read.
+
+- [ ] Place a food or vet stop immediately after a deliberately rough stretch in
+      the route-choice test mission.
+- [ ] Strengthen the on-pass cue: expression change, short animation, sound, or
+      clearly targeted message.
+- [ ] Make the result screen mention when a stop saved an animal from bailing.
+- [ ] Remove or redesign any route stop that players pass without noticing or
+      understanding.
+
+### 9. Add scenery only where it improves readability or delight
+
+The close camera exposes the barren world. Add environmental character, but do
+not let scenery displace the gameplay work above.
+
+- [ ] Add a small reusable set of parallax features, foreground props, and roadside
+      details.
+- [ ] Give the five test missions distinct visual identities.
+- [ ] Use scenery to telegraph terrain and route character where possible.
+- [ ] Avoid a large art pipeline until the core test succeeds.
+
+### 10. Restore fuel only after route choice gives it a purpose
+
+Fuel remains disabled behind `FUEL_ENABLED`.
+
+- [ ] Keep fuel off while every route automatically passes the fuel stop.
+- [ ] Restore fuel only when the player can knowingly choose a route, load, or
+      vehicle that changes range risk.
+- [ ] Ensure fuel and comfort create different decisions:
+  - weight and distance affect fuel/range;
+  - terrain and driving affect comfort.
+- [ ] Remove fuel permanently if route and load decisions do not make it legible or
+      fun in external play.
+
+## Recommended implementation sprint
+
+The next playable build should contain only:
+
+1. automatic handling of mandatory prep;
+2. a clear result/replay/continue screen;
+3. one meaningful safe-versus-rough route choice;
+4. one five-mission test path built around distinct situations;
+5. only the minimum supporting UI and scenery needed to test those changes.
+
+Then test with 3–5 unfamiliar players before expanding further. Use the results
+to revise the build, then run the full 10-player Gate 5 test.
+
+## Explicitly not next
+
+Do not build these until the milestone above earns them:
+
+- additional animals, vehicles, equipment, or levels;
+- currency, shops, upgrade trees, or a large progression economy;
+- procedural level generation;
+- commercial artwork or a formal animation pipeline;
+- native app-store release work;
+- advertising, purchases, analytics, accounts, or notifications;
+- water slosh simulation;
+- free-roaming animal AI or manual capture actions;
+- multiplayer, social systems, or live events.
