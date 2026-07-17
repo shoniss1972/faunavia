@@ -359,14 +359,39 @@ Fuel remains disabled behind `FUEL_ENABLED`.
 
 The next playable build should contain only:
 
-1. automatic handling of mandatory prep;
-2. a clear result/replay/continue screen;
-3. one meaningful safe-versus-rough route choice;
-4. one five-mission test path built around distinct situations;
-5. only the minimum supporting UI and scenery needed to test those changes.
+1. [x] automatic handling of mandatory prep (auto-loaded brief);
+2. [x] a clear result/replay/continue screen;
+3. [x] one meaningful safe-versus-rough route choice (Level 3);
+4. [x] one five-mission test path built around distinct situations;
+5. [ ] only the minimum supporting UI and scenery needed to test those changes
+   — still open (see milestone 9 scenery; landscape is barren).
 
 Then test with 3–5 unfamiliar players before expanding further. Use the results
 to revise the build, then run the full 10-player Gate 5 test.
+
+## Owner idea backlog — 2026-07-18 (park, do not build yet)
+
+Captured mid-session while thinking; not scheduled. Several reinforce open
+milestones (noted inline). Revisit after the 3–5 player test.
+
+- **Vehicles must be readily identifiable.** They currently read as too similar.
+  Distinct silhouette/colour per vehicle, the way the animals got distinct
+  silhouettes. Directly serves milestone 6 (legible vehicle qualities) — a player
+  can't reason "which vehicle for this load" if they can't tell them apart.
+- **Replace the trike with a tuk-tuk.** More characterful and instantly readable
+  as the small starter vehicle; helps the identifiability point above.
+- **Show the player as the driver.** A simple, androgynous / gender-neutral human
+  character in the cab. Adds life and a point of identification; pairs with the
+  barren-landscape/juiciness work (milestone 9).
+- **Terrain obstacles (e.g. rocks).** Hazards some vehicles must take with care —
+  a felt difference in how each vehicle handles rough ground. Ties to milestone 6
+  (a "ride/agility" difference between vehicles) and gives driving skill more to
+  do than manage speed.
+- **Obstacle animals (e.g. a rhino).** A hazard that tips a small/light vehicle
+  over, letting the passengers escape — unharmed, but the level fails. A new,
+  legible fail source tied to vehicle choice (a bigger/heavier vehicle resists
+  it), reinforcing why the load wants the right vehicle. Keep the tone playful and
+  the escape harmless, per the design rules.
 
 ## Explicitly not next
 
