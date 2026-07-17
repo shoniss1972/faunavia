@@ -76,13 +76,27 @@
       choice from Gate 3 changes how the drive *feels*, not just what it weighs.
       Feeds the tester's "driving style doesn't seem to make any difference"
       (item 4 below): variance is what makes a reaction legible as a *reaction*.
-- [ ] **KEYSTONE — give comfort a real in-the-moment stake.** Rough driving
-      drains comfort but costs nothing, so the "oof" is decoration (Gate 5 item 4,
-      still open). Attach a consequence the player sees live: a payout that drains
-      as comfort drops, a patience meter that can end the run, or an animal that
-      bails at zero — pick one and make it legible on screen. The owner replay
-      (2026-07-18) showed this one fix is upstream of four separate complaints —
-      see below.
+- [ ] **KEYSTONE — an animal bails at zero comfort** (DECIDED 2026-07-18; see
+      PLAYTEST_NOTES). Rough driving drains comfort but costs nothing, so the
+      "oof" is decoration (Gate 5 item 4). The stake: push an animal to zero and
+      it leaps off and trots back down the road. Soft resolution — the run
+      continues and completes, but that animal scores nothing (usually dropping
+      you under the next unlock). One fix, upstream of four complaints below.
+      Bundles the reaction-variance item as a prerequisite:
+      - [ ] Per-animal comfort keyed to temperament (was the variance item). An
+            array of comfort values parallel to `passengers`; each drains at a
+            rate set by its `Animals.DATA` temperament (timid fast, placid slow)
+            off the shared suspension jolt. `passenger_state` becomes per-animal
+            so `_draw_critter` picks each animal's own face.
+      - [ ] Bail at zero: mark the animal bailed, animate it leaving, drop it from
+            the delivered set; run continues.
+      - [ ] Scoring from who arrived (extend the skill-star calc): bailed animals
+            contribute nothing; stars reflect delivered animals and their comfort.
+      - [ ] Food/vet signs restore per-animal comfort so reaching one saves an
+            animal from the brink — makes the signs a lifeline (fixes the
+            "meaningless signs" complaint directly).
+      - [ ] Telegraph: make the approach to zero and the bail itself read (annoyed
+            face already exists; may want an escalating "about to jump" cue).
 - [ ] Prep screen is administrative, not a decision (owner replay). Downstream of
       the keystone: once rough roads have a cost, loadout choices trade against it
       (which animals tolerate this route, is the calming feed worth a slot). Do

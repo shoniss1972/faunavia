@@ -222,3 +222,27 @@ a stakes problem. Cheap to improve, independent of the above.
   instead.
 - Remove: nothing yet — but if the keystone does not rescue prep, cutting the
   click-aboard step to an auto-load is on the table.
+
+### Keystone form — DECIDED 2026-07-18
+
+The stake for rough driving: **an animal bails at zero comfort.** Chosen over a
+soft draining reward and over a hard run-fail. It is the most legible answer to
+"driving doesn't matter" — the animal acts on its feelings by leaving — and it
+turns the expressions already built into the warning system (annoyed face is the
+telegraph, zero is the bail).
+
+Resolution when you arrive short — **soft:** the animal leaps off and trots back
+down the road, the run continues, you still complete the level, but that animal
+scores nothing. Losing its stars usually drops you under the next unlock, so the
+sting is real and may prompt a replay, but there is no hard RUN FAILED wall. This
+keeps the cozy tone.
+
+This pulls per-animal comfort in as a PREREQUISITE, not a separate task: one
+shared comfort value cannot support "an animal bails" (all would leave at once).
+So the reaction-variance item and the bail stake are one build — comfort per
+animal keyed to temperament (timid rabbit frets and bails long before the placid
+wombat is bothered), with the bail firing when any single animal reaches zero.
+
+Knock-on wins this unlocks, to verify after: food/vet signs become a lifeline
+(reach one to pull an animal back from the brink), and prep becomes a real
+decision (which animals tolerate this route, is the calming feed worth a slot).

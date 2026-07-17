@@ -85,15 +85,30 @@ const FUEL_MASS_PENALTY := 2.4     # multiplies fuel burn per pixel at load 1.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
 const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
-# Comfort is a 0..100 mood the passenger builds from how the ride feels.
-# Hard suspension jolts drain it; smooth travel restores it. The value is
-# never shown as a number — it only drives the animal's face and emotes.
+# Comfort is a 0..100 mood EACH passenger builds from how the ride feels. Hard
+# suspension jolts drain it; smooth travel restores it. The value is never shown
+# as a number — it drives the animal's face, and at zero the animal bails off the
+# truck. Every animal shares the same suspension jolt but drains at its own rate
+# (see TEMPERAMENT_SENSITIVITY), so a crew reacts as individuals: the timid rabbit
+# frets and leaps long before the placid wombat is bothered.
 const COMFORT_MAX := 100.0
 const COMFORT_JOLT_THRESHOLD := 58.0   # |body_vy| below this counts as a smooth ride
 const COMFORT_LOSS_RATE := 0.7         # comfort lost per unit of jolt-over-threshold, per second
 const COMFORT_RECOVERY := 18.0         # comfort regained per second on smooth travel
 const COMFORT_ANNOYED := 40.0          # at or below this the passenger is annoyed
 const COMFORT_DELIGHTED := 80.0        # at or above this, and moving well, it is delighted
+const COMFORT_PANIC := 18.0            # at or below this it is on the verge of bailing (telegraph)
+
+# How fast each temperament sheds comfort, as a multiplier on the drain rate. The
+# words come from Animals.DATA; a timid animal is twice as fragile as a placid one.
+const TEMPERAMENT_SENSITIVITY := {
+	"timid": 1.7,     # rabbit — nervous, bolts first
+	"loud": 1.3,      # parrot — dramatic
+	"sly": 1.0,       # fox — average
+	"stubborn": 0.9,  # goat — complains but digs in
+	"slow": 0.7,      # tortoise — serene
+	"placid": 0.55,   # wombat — barely notices
+}
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
@@ -112,14 +127,16 @@ var track_freq := 1.0
 var finished := false
 var body_y := 0.0
 var body_vy := 0.0
-var comfort := COMFORT_MAX
 var _critter_art := {}   # "<id>_<mood>" -> Texture2D, filled on first draw
 var cam_y := 0.0         # smoothed terrain height the camera tracks
 var _cam := Vector2.ZERO # world point at the screen's top-left, set each frame
-var passenger_state := "content"
-var ever_annoyed := false
-var ever_delighted := false
 var passengers: Array[String] = []
+# Per-passenger state, all parallel to `passengers` and (re)built in _reset_run.
+var comforts: Array[float] = []       # 0..100 mood
+var states: Array[String] = []        # "content" / "annoyed" / "delighted"
+var ever_annoyed: Array[bool] = []    # did this animal ever drop to annoyed — for scoring
+var bailed: Array[bool] = []          # has it leapt off the truck
+var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
 var load_factor := 0.5
 var has_cage := false
 var has_trailer := false
@@ -214,24 +231,50 @@ func _update_fuel_colour() -> void:
 
 
 func _update_comfort(delta: float) -> void:
-	# The passenger reads the ride through the suspension: sharp vertical motion
-	# is a jolt that drains comfort, calm travel lets it recover. Comfort then
-	# selects one of three moods the animal acts out.
+	# Each passenger reads the ride through the shared suspension: a sharp jolt
+	# drains its comfort at a rate set by temperament, calm travel lets it recover.
+	# Comfort selects the mood the animal wears, and reaching zero bails it off.
 	var jolt := absf(body_vy)
-	if jolt > COMFORT_JOLT_THRESHOLD:
-		comfort -= (jolt - COMFORT_JOLT_THRESHOLD) * COMFORT_LOSS_RATE * delta
-	else:
-		comfort += COMFORT_RECOVERY * delta
-	comfort = clampf(comfort, 0.0, COMFORT_MAX)
+	var over := jolt - COMFORT_JOLT_THRESHOLD
+	for i in passengers.size():
+		if bailed[i]:
+			bail_t[i] += delta
+			continue
+		var sens: float = TEMPERAMENT_SENSITIVITY.get(Animals.get_data(passengers[i]).get("temperament", ""), 1.0)
+		if over > 0.0:
+			comforts[i] -= over * COMFORT_LOSS_RATE * sens * delta
+		else:
+			comforts[i] += COMFORT_RECOVERY * delta
+		comforts[i] = clampf(comforts[i], 0.0, COMFORT_MAX)
 
-	if comfort <= COMFORT_ANNOYED:
-		passenger_state = "annoyed"
-		ever_annoyed = true
-	elif comfort >= COMFORT_DELIGHTED and speed > 120.0:
-		passenger_state = "delighted"
-		ever_delighted = true
-	else:
-		passenger_state = "content"
+		if comforts[i] <= 0.0:
+			_bail_animal(i)
+			continue
+		if comforts[i] <= COMFORT_ANNOYED:
+			states[i] = "annoyed"
+			ever_annoyed[i] = true
+		elif comforts[i] >= COMFORT_DELIGHTED and speed > 120.0:
+			states[i] = "delighted"
+		else:
+			states[i] = "content"
+
+
+func _bail_animal(index: int) -> void:
+	# Pushed past its limit, the animal leaps off and trots back down the road. It
+	# no longer counts as delivered; the run carries on with whoever is left.
+	bailed[index] = true
+	bail_t[index] = 0.0
+	comforts[index] = 0.0
+	states[index] = "annoyed"
+	message_label.text = "%s had enough and jumped off!" % Animals.display_name(passengers[index])
+
+
+func _active_passengers() -> int:
+	var n := 0
+	for i in passengers.size():
+		if not bailed[i]:
+			n += 1
+	return n
 
 
 func _check_route_nodes() -> void:
@@ -244,9 +287,17 @@ func _check_route_nodes() -> void:
 			if vehicle_x >= nx and not finished:
 				finished = true
 				speed = 0.0
-				passenger_state = "delighted"
+				for i in passengers.size():
+					if not bailed[i]:
+						states[i] = "delighted"
 				var tail := "Preparing next mission..." if GameState.has_more_levels() else "That was the last rescue!"
-				message_label.text = "Delivered %s! %s" % [_crew_label(), tail]
+				var delivered := _active_passengers()
+				if delivered == 0:
+					message_label.text = "Arrived with an empty truck. %s" % tail
+				elif delivered < passengers.size():
+					message_label.text = "Delivered %d of %d. %s" % [delivered, passengers.size(), tail]
+				else:
+					message_label.text = "Delivered %s! %s" % [_crew_label(), tail]
 			continue
 		if nodes_used.has(nx) or absf(vehicle_x - nx) >= 42.0:
 			continue
@@ -256,11 +307,27 @@ func _check_route_nodes() -> void:
 				fuel = min(fuel + FUEL_PICKUP_AMOUNT, 100.0)
 				message_label.text = "Fuel collected. Keep going!"
 			"food":
-				comfort = min(comfort + FOOD_COMFORT, COMFORT_MAX)
-				message_label.text = "Fed the crew — spirits lift."
+				# A top-up: lifts spirits, and can pull a fretting animal back from
+				# the brink if you reach it before it bails.
+				var rescued := _restore_comfort(FOOD_COMFORT)
+				message_label.text = ("Fed the crew — steadied %s just in time!" % rescued) if rescued != "" else "Fed the crew — spirits lift."
 			"vet":
-				comfort = COMFORT_MAX
-				message_label.text = "Vet check — everyone's calm."
+				# A full reset: everyone still aboard is calmed completely.
+				_restore_comfort(COMFORT_MAX)
+				message_label.text = "Vet check — everyone's calm again."
+
+
+func _restore_comfort(amount: float) -> String:
+	# Top up every animal still aboard. Returns the name of one that was on the
+	# verge of bailing and got saved, for the message — empty if none was.
+	var saved := ""
+	for i in passengers.size():
+		if bailed[i]:
+			continue
+		if comforts[i] <= COMFORT_PANIC and saved == "":
+			saved = Animals.display_name(passengers[i])
+		comforts[i] = min(comforts[i] + amount, COMFORT_MAX)
+	return saved
 
 
 func _update_loading(delta: float, drive_requested: bool) -> void:
@@ -271,8 +338,9 @@ func _update_loading(delta: float, drive_requested: bool) -> void:
 		if load_t >= LOAD_TIME:
 			loading = false
 			is_loaded = true
-			passenger_state = "content"
-			message_label.text = "%s aboard! Reach the sanctuary — mind the fuel." % _crew_label().capitalize()
+			for i in states.size():
+				states[i] = "content"
+			message_label.text = "%s aboard! Reach the sanctuary — mind the ride." % _crew_label().capitalize()
 	elif drive_requested:
 		loading = true
 		load_t = 0.0
@@ -286,14 +354,29 @@ func _crew_label() -> String:
 
 
 func _advance_after_delivery() -> void:
-	# The mission is delivered. Score the run, record it (which unlocks the next
-	# level and saves), then return to the level select.
+	# Score the run from who actually arrived, record it (which unlocks the next
+	# level and saves), then return to the level select. Stars:
+	#   0 — nobody made it (everyone bailed)
+	#   1 — arrived short, at least one animal jumped off
+	#   2 — the whole crew arrived, but someone spent the trip annoyed
+	#   3 — the whole crew arrived and none was ever annoyed (a smooth run)
 	advancing = true
-	var earned := 1                        # delivered the crew
-	if not ever_annoyed:
-		earned += 1                        # never let a passenger get annoyed
-	if ever_delighted:
-		earned += 1                        # thrilled the crew with a smooth, spirited run
+	var total := passengers.size()
+	var delivered := _active_passengers()
+	var earned := 0
+	if delivered == 0:
+		earned = 0
+	elif delivered < total:
+		earned = 1
+	else:
+		earned = 2
+		var smooth := true
+		for i in total:
+			if ever_annoyed[i]:
+				smooth = false
+				break
+		if smooth:
+			earned = 3
 	GameState.record_result(GameState.current_level, earned)
 	get_tree().change_scene_to_file("res://src/level_select.tscn")
 
@@ -477,10 +560,11 @@ func _draw_passenger(y_offset: float) -> void:
 	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
 	if n == 1:
-		_draw_critter(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, passengers[0])
+		_draw_seat(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, 0)
 		return
 	# Heads sit wholly between the bed's back edge and the cab, so the cab frame
-	# never crosses a face.
+	# never crosses a face. Bailed animals keep their slot (drawn leaping away)
+	# so the survivors do not shuffle sideways when one jumps off.
 	var r := _crew_head_radius(bw, bh, n)
 	var half := r * HEAD_W_PER_RADIUS * 0.5
 	var left := -bw * SEAT_BACK + half
@@ -492,7 +576,7 @@ func _draw_passenger(y_offset: float) -> void:
 		right = left
 	for i in n:
 		var fx := lerpf(left, right, float(i) / float(n - 1))
-		_draw_critter(Vector2(fx, body_top - 6.0) + off, r, passengers[i])
+		_draw_seat(Vector2(fx, body_top - 6.0) + off, r, i)
 	if has_cage:
 		# A divider bar between the animals — the divided cage keeping the peace.
 		var bar_x := lerpf(left, right, 0.5)
@@ -513,22 +597,42 @@ func _critter_texture(id: String, mood: String) -> Texture2D:
 	return tex
 
 
-func _draw_critter(center: Vector2, radius: float, id: String) -> void:
-	# One animal, drawn from its mood sprite. passenger_state already reads
-	# "content"/"annoyed"/"delighted", which is exactly the filename suffix, so a
-	# mood change swaps the texture and nothing else.
-	var tex := _critter_texture(id, passenger_state)
+const BAIL_ANIM := 0.7   # seconds the leaping-off animation plays before the animal is gone
+
+
+func _draw_seat(center: Vector2, radius: float, index: int) -> void:
+	# One seated animal, wearing its own mood. If it has bailed, it hops up and
+	# back off the truck over BAIL_ANIM seconds, fading as it goes, then is gone.
+	# (Drawn inside the vehicle's body transform, so this stays in body space —
+	# no draw_set_transform here, which would overwrite that transform.)
+	var mood: String = states[index]
+	if not bailed[index]:
+		_draw_critter(center, radius, passengers[index], mood, 1.0)
+		return
+	var t := bail_t[index]
+	if t >= BAIL_ANIM:
+		return
+	var p := t / BAIL_ANIM
+	center += Vector2(-radius * 5.0 * p, -radius * 3.0 * sin(p * PI))
+	_draw_critter(center, radius, passengers[index], mood, 1.0 - p)
+
+
+func _draw_critter(center: Vector2, radius: float, id: String, mood: String, alpha: float) -> void:
+	# One animal, drawn from its mood sprite. The mood string is the filename
+	# suffix ("content"/"annoyed"/"delighted"), so a mood change swaps the texture
+	# and nothing else. `alpha` fades it out during the bail hop.
+	var tex := _critter_texture(id, mood)
 	if tex == null:
-		_draw_critter_shapes(center, radius, id)
+		_draw_critter_shapes(center, radius, id, mood)
 		return
 	var art: Dictionary = CRITTER_ART.get(id, {})
 	var h := radius * float(art.get("scale", 3.0))
 	var w := h * float(tex.get_width()) / float(tex.get_height())
 	var pos := center + Vector2(art.get("offset", Vector2.ZERO)) * radius - Vector2(w, h) * 0.5
-	draw_texture_rect(tex, Rect2(pos, Vector2(w, h)), false)
+	draw_texture_rect(tex, Rect2(pos, Vector2(w, h)), false, Color(1, 1, 1, alpha))
 
 
-func _draw_critter_shapes(center: Vector2, radius: float, id: String) -> void:
+func _draw_critter_shapes(center: Vector2, radius: float, id: String, mood: String) -> void:
 	# Fallback used only if a mood sprite is missing: a species silhouette (ears,
 	# horns, shell, beak) plus a shared mood-driven face. Feature offsets scale
 	# from the reference radius so smaller crew heads stay proportioned.
@@ -566,12 +670,12 @@ func _draw_critter_shapes(center: Vector2, radius: float, id: String) -> void:
 	elif id == "fox":
 		draw_circle(center + Vector2(0, 6) * s, 3.5 * s, colour.lightened(0.4))
 
-	_draw_face(center, s)
+	_draw_face(center, s, mood)
 
 
-func _draw_face(center: Vector2, s: float) -> void:
+func _draw_face(center: Vector2, s: float, mood: String) -> void:
 	var dark := Color("#2c2620")
-	match passenger_state:
+	match mood:
 		"annoyed":
 			# Furrowed brows sloping in, dot eyes, a flat set mouth.
 			draw_line(center + Vector2(-8, -7) * s, center + Vector2(-2, -4) * s, dark, 1.6)
@@ -592,20 +696,31 @@ func _draw_face(center: Vector2, s: float) -> void:
 
 
 func _draw_emote(screen_x: float, top_y: float) -> void:
-	# A short comic call-out above the cab so the mood reads at a glance.
-	# Content stays quiet — only the notable moods speak up.
+	# A short comic call-out above the cab so the crew's state reads at a glance.
+	# It follows whoever is worst off — the animal nearest bailing gets the shout,
+	# since that is the one the player must act on. Only notable moods speak up.
+	var worst := -1
+	for i in passengers.size():
+		if bailed[i]:
+			continue
+		if worst < 0 or comforts[i] < comforts[worst]:
+			worst = i
+	if worst < 0:
+		return
 	var text := ""
 	var tint := Color("#2c2620")
-	match passenger_state:
-		"annoyed":
-			text = "Oof!"
-			tint = Color("#b4472e")
-		"delighted":
-			text = "Wheee!"
-			tint = Color("#2f7d4f")
+	if comforts[worst] <= COMFORT_PANIC:
+		text = "About to jump!"
+		tint = Color("#b4472e")
+	elif states[worst] == "annoyed":
+		text = "Oof!"
+		tint = Color("#b4472e")
+	elif states[worst] == "delighted":
+		text = "Wheee!"
+		tint = Color("#2f7d4f")
 	if text.is_empty():
 		return
-	draw_string(ThemeDB.fallback_font, Vector2(screen_x - 40.0, top_y), text, HORIZONTAL_ALIGNMENT_CENTER, 80.0, 20, tint)
+	draw_string(ThemeDB.fallback_font, Vector2(screen_x - 90.0, top_y), text, HORIZONTAL_ALIGNMENT_CENTER, 180.0, 20, tint)
 
 
 func _on_drive_down() -> void:
@@ -638,6 +753,17 @@ func _reset_run() -> void:
 	nodes_used = {}
 
 	passengers = GameState.loadout_animals.duplicate()
+	comforts.clear()
+	states.clear()
+	ever_annoyed.clear()
+	bailed.clear()
+	bail_t.clear()
+	for _p in passengers:
+		comforts.append(COMFORT_MAX)
+		states.append("content")
+		ever_annoyed.append(false)
+		bailed.append(false)
+		bail_t.append(0.0)
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
 	has_trailer = GameState.loadout_trailer
@@ -652,10 +778,6 @@ func _reset_run() -> void:
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
 	cam_y = terrain_y(vehicle_x)
 	body_vy = 0.0
-	comfort = COMFORT_MAX
-	passenger_state = "content"
-	ever_annoyed = false
-	ever_delighted = false
 	is_loaded = false
 	loading = false
 	load_t = 0.0
