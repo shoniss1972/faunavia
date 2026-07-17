@@ -52,12 +52,16 @@ func _add_label(parent: Node, text: String, size: int, colour := TEXT_DARK, alig
 func _build() -> void:
 	var earned := int(result.get("earned", 0))
 	var passengers: Array = result.get("passengers", [])
+	# An empty arrival — nobody delivered — is a failed rescue, not a low score.
+	# It never advances (even if the level was already unlocked): the only way on
+	# is to retry and deliver at least one animal.
+	var failed := int(result.get("delivered", 0)) <= 0
 
 	var column := _make_root_column()
 
 	_add_label(column, Levels.get_level(level_index).get("title", "Rescue"), 20, MUTED)
 	_add_label(column, "★".repeat(earned) + "☆".repeat(3 - earned), 52, STAR_GOLD)
-	_add_label(column, _headline(earned), 26)
+	_add_label(column, _headline(earned, failed), 26, BAD_RED if failed else TEXT_DARK)
 
 	_add_label(column, "— WHO ARRIVED —", 15, MUTED)
 	for p in passengers:
@@ -77,7 +81,7 @@ func _build() -> void:
 	column.add_child(panel)
 	_add_label(panel, _hint(earned, passengers), 18)
 
-	var teaser := _teaser()
+	var teaser := "Deliver at least one animal to move on." if failed else _teaser()
 	if teaser != "":
 		_add_label(column, teaser, 16, MUTED)
 
@@ -88,6 +92,24 @@ func _build() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	column.add_child(buttons)
+
+	if failed:
+		# A failed rescue offers no way forward — retry is the primary action.
+		var to_levels := Button.new()
+		to_levels.custom_minimum_size = Vector2(0, 96)
+		to_levels.add_theme_font_size_override("font_size", 22)
+		to_levels.text = "← Levels"
+		to_levels.pressed.connect(_on_levels)
+		buttons.add_child(to_levels)
+
+		var retry_primary := Button.new()
+		retry_primary.custom_minimum_size = Vector2(0, 96)
+		retry_primary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		retry_primary.add_theme_font_size_override("font_size", 26)
+		retry_primary.text = "↺ Retry"
+		retry_primary.pressed.connect(_on_retry)
+		buttons.add_child(retry_primary)
+		return
 
 	var retry := Button.new()
 	retry.custom_minimum_size = Vector2(0, 96)
@@ -141,7 +163,9 @@ func _add_roster_row(parent: Node, p: Dictionary) -> void:
 	parent.add_child(row)
 
 
-func _headline(earned: int) -> String:
+func _headline(earned: int, failed: bool) -> String:
+	if failed:
+		return "Rescue failed."
 	match earned:
 		3: return "Perfect rescue!"
 		2: return "Everyone arrived."
