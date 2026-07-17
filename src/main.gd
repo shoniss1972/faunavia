@@ -505,6 +505,26 @@ func _draw_trailer() -> void:
 	draw_circle(Vector2(0, 0), 5, Color("#b8b6a8"))
 	draw_set_transform(_w2s(Vector2(tx_world, ground - 24.0)), angle, zoom)
 	draw_rect(Rect2(-26, -22, 52, 26), Color("#9a8b76"), true)
+
+	# Overflow passengers ride here, seated on the box rim so their heads poke up
+	# like the crew in the bed. Real passenger indices, so mood and the bail hop
+	# carry over. Still inside the box transform, so they bob with the trailer.
+	var t_ids: Array = _seating_split()[1]
+	var tm := t_ids.size()
+	if tm > 0:
+		var inner := 44.0
+		var head_w := inner / (1.0 + HEAD_SPACING * float(tm - 1))
+		var tr := maxf(minf(11.0, head_w / HEAD_W_PER_RADIUS), MIN_HEAD)
+		var thalf := tr * HEAD_W_PER_RADIUS * 0.5
+		var tleft := -inner * 0.5 + thalf
+		var tright := inner * 0.5 - thalf
+		if tright < tleft:
+			tleft = 0.0
+			tright = 0.0
+		var seat_y := -20.0 + _passenger_load_offset()
+		for k in tm:
+			var fx := (tleft + tright) * 0.5 if tm == 1 else lerpf(tleft, tright, float(k) / float(tm - 1))
+			_draw_seat(Vector2(fx, seat_y), tr, t_ids[k])
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -565,25 +585,49 @@ func _crew_head_radius(bw: float, bh: float, n: int) -> float:
 	return maxf(minf(bh * SOLO_HEAD, head_w / HEAD_W_PER_RADIUS), MIN_HEAD)
 
 
+func _seating_split() -> Array:
+	# Split passengers into [bed_indices, trailer_indices]. Without a trailer
+	# everyone rides the bed; with one, fill the vehicle to its own slot capacity
+	# and overflow into the trailer — so a load that "needs a trailer" is actually
+	# seen using it rather than crammed into the cab with the trailer left empty.
+	var bed: Array[int] = []
+	var trailer_ids: Array[int] = []
+	var veh_cap := int(vehicle_data.get("capacity", 2))
+	var used := 0
+	for i in passengers.size():
+		var s := int(Animals.get_data(passengers[i]).get("size", 1))
+		if has_trailer and used + s > veh_cap:
+			trailer_ids.append(i)
+		else:
+			used += s
+			bed.append(i)
+	return [bed, trailer_ids]
+
+
 func _draw_passenger(y_offset: float) -> void:
-	# The loaded animals ride in the cab, drawn in body space so they bob and
-	# sag with the suspension. y_offset drops them into their seats during the
-	# boarding animation. A single passenger sits high in the cab window; a crew
-	# spreads across the bed.
-	var n := passengers.size()
-	if n == 0:
+	# The loaded animals ride in the cab and, when a trailer is hitched, spill into
+	# it (the trailer's occupants are drawn by _draw_trailer, in its own transform).
+	# Drawn in body space so they bob and sag with the suspension. y_offset drops
+	# them into their seats during the boarding animation. A lone passenger sits
+	# high in the cab window; a crew spreads across the bed.
+	var total := passengers.size()
+	if total == 0:
 		return
 	var bw: float = vehicle_data.get("body_w", 96.0)
 	var bh: float = vehicle_data.get("body_h", 32.0)
 	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
-	if n == 1:
+	if total == 1:
 		_draw_seat(Vector2(-bw * 0.01, body_top - 12.0) + off, bh * 0.4, 0)
 		return
 	# Heads sit wholly between the bed's back edge and the cab, so the cab frame
 	# never crosses a face. Bailed animals keep their slot (drawn leaping away)
 	# so the survivors do not shuffle sideways when one jumps off.
-	var r := _crew_head_radius(bw, bh, n)
+	var bed: Array = _seating_split()[0]
+	var m := bed.size()
+	if m == 0:
+		return
+	var r := _crew_head_radius(bw, bh, m)
 	var half := r * HEAD_W_PER_RADIUS * 0.5
 	var left := -bw * SEAT_BACK + half
 	var right := bw * CAB_X - half
@@ -592,10 +636,10 @@ func _draw_passenger(y_offset: float) -> void:
 		# rather than letting the row invert and run backwards.
 		left = (left + right) * 0.5
 		right = left
-	for i in n:
-		var fx := lerpf(left, right, float(i) / float(n - 1))
-		_draw_seat(Vector2(fx, body_top - 6.0) + off, r, i)
-	if has_cage:
+	for k in m:
+		var fx := (left + right) * 0.5 if m == 1 else lerpf(left, right, float(k) / float(m - 1))
+		_draw_seat(Vector2(fx, body_top - 6.0) + off, r, bed[k])
+	if has_cage and m > 1:
 		# A divider bar between the animals — the divided cage keeping the peace.
 		var bar_x := lerpf(left, right, 0.5)
 		draw_line(Vector2(bar_x, body_top - 22.0) + off, Vector2(bar_x, body_top + 6.0) + off, Color("#4a4f45"), 3.0)
