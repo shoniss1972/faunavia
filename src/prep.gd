@@ -1,28 +1,38 @@
 extends Control
 
-# Mission preparation screen. The player loads the required animals, adds any
-# gear, and departs once the arrangement is valid — capacity respected,
-# incompatible animals separated by a cage, sly animals handled with gloves.
+# Mission brief. Every current level has exactly one valid loadout — the required
+# animals, the gear their traits demand, and a trailer when they overflow the
+# vehicle — so there is no real choice to make. Rather than force the player to
+# click that one answer back to the game (validation, not gameplay), we auto-load
+# the manifest and show it as a brief: who rides, what is packed and why, then
+# DEPART. A genuine prep *choice* returns only when a level offers two valid plans
+# with a real trade-off (see TODO milestone 1).
 
 const TEXT_DARK := Color("#2c3327")
+const MUTED := Color("#6b7363")
 const OK_GREEN := Color("#2f7d4f")
-const WARN_RED := Color("#b4472e")
 
 var level := {}
+var animals: Array[String] = []
+var equipment: Array[String] = []
+var trailer := false
 var capacity := 0
-var trailer_attached := false
-var loaded := {}       # animal_id -> bool
-var equipped := {}     # equipment_id -> bool
-
-var capacity_label: Label
-var status_label: Label
-var depart_button: Button
 
 
 func _ready() -> void:
 	level = Levels.get_level(GameState.current_level)
-	_build_prep()
-	_refresh()
+	_solve_loadout()
+	_build_brief()
+
+
+func _solve_loadout() -> void:
+	# The manifest is fixed: carry everything the mission asks for, pack every
+	# listed gear (each is required by an animal's trait or the compat rule), and
+	# hitch the trailer when the level flags it.
+	animals.assign(level["deliver"])
+	equipment.assign(level["equipment"])
+	trailer = level.get("trailer", false)
+	capacity = int(Vehicles.get_data(level["vehicle"])["capacity"])
 
 
 func _make_root_column() -> VBoxContainer:
@@ -37,90 +47,54 @@ func _make_root_column() -> VBoxContainer:
 	return column
 
 
-func _add_label(parent: Node, text: String, size: int, align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
+func _add_label(parent: Node, text: String, size: int, colour := TEXT_DARK, align := HORIZONTAL_ALIGNMENT_CENTER) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = align
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", TEXT_DARK)
+	label.add_theme_color_override("font_color", colour)
 	parent.add_child(label)
 	return label
 
 
-func _build_prep() -> void:
-	loaded.clear()
-	equipped.clear()
-	trailer_attached = false
-	for id in level["deliver"]:
-		loaded[id] = false
-	for eq in level["equipment"]:
-		equipped[eq] = false
-
+func _build_brief() -> void:
 	var veh: Dictionary = Vehicles.get_data(level["vehicle"])
-	capacity = int(veh["capacity"])
+	var eff_cap := capacity + (GameState.TRAILER_CAPACITY if trailer else 0)
 
-	# Row heights scale down as a level gets busier, so even the fullest loadout
-	# (five animals + equipment + trailer) fits on one screen without scrolling.
-	var rows: int = level["deliver"].size() + level["equipment"].size() + (1 if level.get("trailer", false) else 0)
-	var animal_h := 84 if rows <= 4 else (72 if rows <= 6 else 60)
-	var gear_h := 76 if rows <= 4 else (64 if rows <= 6 else 54)
+	var size := 0
+	var weight := 0
+	for id in animals:
+		size += int(Animals.get_data(id)["size"])
+		weight += int(Animals.get_data(id)["weight"])
+
+	# Rows shrink as the manifest grows so even the fullest brief fits without
+	# scrolling (scroll-over-buttons is unreliable on mobile web).
+	var rows := animals.size() + equipment.size() + (1 if trailer else 0)
+	var row_h := 64 if rows <= 4 else (54 if rows <= 6 else 46)
 
 	var column := _make_root_column()
 	_add_label(column, level["title"], 28)
-	_add_label(column, level["brief"], 17)
-	_add_label(column, "Vehicle: %s  ·  %d slots  ·  top speed %d" % [veh["name"], capacity, int(veh["max_speed"])], 17)
-	capacity_label = _add_label(column, "", 20)
+	_add_label(column, level["brief"], 17, MUTED)
+	_add_label(column, "%s  ·  %d slots  ·  top speed %d" % [veh["name"], eff_cap, int(veh["max_speed"])], 16, MUTED)
 
-	_add_label(column, "— LOAD THE ANIMALS —", 16)
-	for id in level["deliver"]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 12)
-		var swatch := ColorRect.new()
-		swatch.color = Color(Animals.get_data(id).get("colour", "#7d6f63"))
-		swatch.custom_minimum_size = Vector2(52, animal_h)
-		row.add_child(swatch)
-		var btn := Button.new()
-		btn.toggle_mode = true
-		btn.custom_minimum_size = Vector2(0, animal_h)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 19)
-		btn.text = _animal_button_text(id, false)
-		btn.toggled.connect(_on_animal_toggled.bind(id, btn))
-		row.add_child(btn)
-		column.add_child(row)
+	_add_label(column, "— ABOARD —", 16, MUTED)
+	for id in animals:
+		_add_manifest_row(column, Color(Animals.get_data(id).get("colour", "#7d6f63")), _animal_line(id), row_h)
 
-	if not level["equipment"].is_empty() or level.get("trailer", false):
-		_add_label(column, "— PACK GEAR —", 16)
-		var grid := GridContainer.new()
-		grid.columns = 2
-		grid.add_theme_constant_override("h_separation", 12)
-		grid.add_theme_constant_override("v_separation", 8)
-		column.add_child(grid)
-		for eq in level["equipment"]:
-			var btn := Button.new()
-			btn.toggle_mode = true
-			btn.custom_minimum_size = Vector2(0, gear_h)
-			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			btn.add_theme_font_size_override("font_size", 19)
-			btn.text = _equip_button_text(eq, false)
-			btn.toggled.connect(_on_equip_toggled.bind(eq, btn))
-			grid.add_child(btn)
-		if level.get("trailer", false):
-			var tbtn := Button.new()
-			tbtn.toggle_mode = true
-			tbtn.custom_minimum_size = Vector2(0, gear_h)
-			tbtn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			tbtn.add_theme_font_size_override("font_size", 19)
-			tbtn.text = _trailer_button_text(false)
-			tbtn.toggled.connect(_on_trailer_toggled.bind(tbtn))
-			grid.add_child(tbtn)
+	if not equipment.is_empty() or trailer:
+		_add_label(column, "— PACKED —", 16, MUTED)
+		for eq in equipment:
+			_add_manifest_row(column, Color("#8a8f84"), _gear_line(eq), row_h)
+		if trailer:
+			_add_manifest_row(column, Color("#8a8f84"),
+				"Trailer  ·  +%d slots — the load won't fit without it." % GameState.TRAILER_CAPACITY, row_h)
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
 
-	status_label = _add_label(column, "", 19)
+	_add_label(column, "Load: %d / %d slots  ·  %d kg cargo" % [size, eff_cap, weight], 18, OK_GREEN)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
@@ -133,7 +107,7 @@ func _build_prep() -> void:
 	back_button.pressed.connect(_on_back)
 	buttons.add_child(back_button)
 
-	depart_button = Button.new()
+	var depart_button := Button.new()
 	depart_button.custom_minimum_size = Vector2(0, 96)
 	depart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	depart_button.add_theme_font_size_override("font_size", 28)
@@ -142,105 +116,50 @@ func _build_prep() -> void:
 	buttons.add_child(depart_button)
 
 
-func _animal_button_text(id: String, is_loaded: bool) -> String:
+func _add_manifest_row(parent: Node, swatch_colour: Color, text: String, height: int) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.custom_minimum_size = Vector2(0, height)
+	var swatch := ColorRect.new()
+	swatch.color = swatch_colour
+	swatch.custom_minimum_size = Vector2(48, height)
+	row.add_child(swatch)
+	var label := _add_label(row, text, 18, TEXT_DARK, HORIZONTAL_ALIGNMENT_LEFT)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	parent.add_child(row)
+
+
+func _animal_line(id: String) -> String:
 	var data: Dictionary = Animals.get_data(id)
-	var mark := "[✓] " if is_loaded else "[  ] "
-	return "%s%s  ·  size %d, %dkg, %s" % [
-		mark, data["name"], data["size"], int(data["weight"]), data["temperament"]]
+	return "%s  ·  size %d, %dkg, %s" % [data["name"], data["size"], int(data["weight"]), data["temperament"]]
 
 
-func _equip_button_text(eq: String, is_on: bool) -> String:
-	var mark := "[✓] " if is_on else "[  ] "
-	return "%s%s" % [mark, Levels.equipment_name(eq)]
+func _gear_line(eq: String) -> String:
+	return "%s — %s" % [Levels.equipment_name(eq), _gear_reason(eq)]
 
 
-func _trailer_button_text(is_on: bool) -> String:
-	var mark := "[✓] " if is_on else "[  ] "
-	return "%sTrailer  ·  +%d slots" % [mark, GameState.TRAILER_CAPACITY]
-
-
-func _on_animal_toggled(pressed: bool, id: String, btn: Button) -> void:
-	loaded[id] = pressed
-	btn.text = _animal_button_text(id, pressed)
-	_refresh()
-
-
-func _on_equip_toggled(pressed: bool, eq: String, btn: Button) -> void:
-	equipped[eq] = pressed
-	btn.text = _equip_button_text(eq, pressed)
-	_refresh()
-
-
-func _on_trailer_toggled(pressed: bool, btn: Button) -> void:
-	trailer_attached = pressed
-	btn.text = _trailer_button_text(pressed)
-	_refresh()
-
-
-func _effective_capacity() -> int:
-	return capacity + (GameState.TRAILER_CAPACITY if trailer_attached else 0)
-
-
-func _loaded_animals() -> Array[String]:
-	var out: Array[String] = []
-	for id in level["deliver"]:
-		if loaded.get(id, false):
-			out.append(id)
-	return out
-
-
-func _equipped_gear() -> Array[String]:
-	var out: Array[String] = []
-	for eq in level["equipment"]:
-		if equipped.get(eq, false):
-			out.append(eq)
-	return out
-
-
-func _validate() -> Dictionary:
-	var animals := _loaded_animals()
-
-	for id in level["deliver"]:
-		if not loaded.get(id, false):
-			return {"ok": false, "reason": "%s still needs loading." % Animals.display_name(id)}
-
-	var size := 0
+func _gear_reason(eq: String) -> String:
+	# Explain why each item rides along, drawn from the same traits that made it
+	# mandatory — so the brief teaches the animal quirks the old checklist hid.
+	if eq == "divided_cage":
+		for id in animals:
+			for other in Animals.get_data(id).get("incompatible", []):
+				if other in animals:
+					return "keeps %s and %s from squabbling." % [
+						Animals.display_name(id), Animals.display_name(other)]
+		return "keeps quarrelsome passengers apart."
 	for id in animals:
-		size += int(Animals.get_data(id)["size"])
-	if size > _effective_capacity():
-		return {"ok": false, "reason": "Over capacity: %d / %d — try a trailer." % [size, _effective_capacity()]}
-
-	for id in animals:
-		for other in Animals.get_data(id).get("incompatible", []):
-			if loaded.get(other, false) and not equipped.get("divided_cage", false):
-				return {"ok": false, "reason": "%s and %s will squabble — add a divided cage." % [
-					Animals.display_name(id), Animals.display_name(other)]}
-
-	for id in animals:
-		for req in Animals.get_data(id).get("requires", []):
-			if not equipped.get(req, false):
-				return {"ok": false, "reason": "The %s needs %s aboard." % [
-					Animals.display_name(id), Levels.equipment_name(req)]}
-
-	return {"ok": true, "reason": "Ready to depart!"}
-
-
-func _refresh() -> void:
-	var size := 0
-	var weight := 0
-	for id in _loaded_animals():
-		size += int(Animals.get_data(id)["size"])
-		weight += int(Animals.get_data(id)["weight"])
-	capacity_label.text = "Load: %d / %d slots  ·  %d kg cargo" % [size, _effective_capacity(), weight]
-
-	var result := _validate()
-	status_label.text = result["reason"]
-	status_label.add_theme_color_override("font_color", OK_GREEN if result["ok"] else WARN_RED)
-	depart_button.disabled = not result["ok"]
+		if eq in Animals.get_data(id).get("requires", []):
+			match eq:
+				"gloves": return "the %s is sly and needs careful handling." % Animals.display_name(id)
+				"ramp": return "the %s can't clamber aboard on its own." % Animals.display_name(id)
+				"leash": return "the %s wanders off without it." % Animals.display_name(id)
+	return "needed for this rescue."
 
 
 func _on_depart() -> void:
-	GameState.set_loadout(_loaded_animals(), _equipped_gear(), trailer_attached)
+	GameState.set_loadout(animals, equipment, trailer)
 	get_tree().change_scene_to_file("res://src/main.tscn")
 
 
