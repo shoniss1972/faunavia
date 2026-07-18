@@ -594,23 +594,119 @@ func _prop_tuft(s: float, lush: float, seed_val: int) -> void:
 		draw_circle(Vector2(0, -7.5 * s), 1.6 * s, Color("#e0c65c"))
 
 
-func _draw_marker(world_x: float, label_text: String, marker_color: Color, visible_marker: bool) -> void:
+func _draw_marker(world_x: float, node_type: String, label_text: String, marker_color: Color, visible_marker: bool) -> void:
 	if not visible_marker:
 		return
 	var base := _w2s(Vector2(world_x, terrain_y(world_x)))
-	if base.x < -160.0 or base.x > size.x + 160.0:
+	if base.x < -220.0 or base.x > size.x + 220.0:
 		return
-	# The sign is drawn in world units through the camera transform so it grows
-	# with the zoom like everything else on the ground.
+	# Everything for a stop is drawn in world units through the camera transform, so
+	# it grows with the zoom like the rest of the ground. draw_set_transform is
+	# absolute (not stacked), so each stop keeps a single local frame: ground at
+	# y = 0, up is negative y.
 	draw_set_transform(base, 0.0, Vector2(WORLD_ZOOM, WORLD_ZOOM))
-	draw_line(Vector2.ZERO, Vector2(0, -110), Color("#3d4b38"), 7.0)
-	# Size the sign to the label so longer names like "SANCTUARY" don't truncate.
 	var font := ThemeDB.fallback_font
+	match node_type:
+		"sanctuary":
+			_draw_sanctuary(font)
+		"food":
+			_draw_signpost(label_text, marker_color, font)
+			_draw_food_stall()
+		"vet":
+			_draw_signpost(label_text, marker_color, font)
+			_draw_vet_stop()
+		_:
+			_draw_signpost(label_text, marker_color, font)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_signpost(label_text: String, marker_color: Color, font: Font) -> void:
+	draw_line(Vector2.ZERO, Vector2(0, -110), Color("#3d4b38"), 7.0)
+	# Size the sign to the label so longer names don't truncate.
 	var text_w := font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	var sign_w := maxf(90.0, text_w + 24.0)
 	draw_rect(Rect2(-sign_w * 0.5, -145, sign_w, 42), marker_color, true)
 	draw_string(font, Vector2(-sign_w * 0.5 + 12.0, -117), label_text, HORIZONTAL_ALIGNMENT_CENTER, sign_w - 24.0, 15, Color("#263127"))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_food_stall() -> void:
+	# A crate of fresh veg at the foot of the FOOD sign, so the feeding stop reads
+	# as food at a glance and not just a word on a board.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-32, 0), Vector2(32, 0), Vector2(26, -22), Vector2(-26, -22)]),
+		Color("#7a4a2b"))
+	draw_line(Vector2(-28, -11), Vector2(28, -11), Color("#5e3a22"), 1.5)
+	_draw_lettuce(Vector2(-16, -22))
+	_draw_lettuce(Vector2(-1, -21))
+	_draw_carrot(Vector2(14, -22))
+	_draw_carrot(Vector2(20, -23))
+	_draw_carrot(Vector2(26, -22))
+
+
+func _draw_lettuce(p: Vector2) -> void:
+	draw_circle(p, 7.0, Color("#5f9e49"))
+	draw_circle(p + Vector2(-3, -2), 4.5, Color("#7fbc5e"))
+	draw_circle(p + Vector2(3, -2), 4.5, Color("#7fbc5e"))
+	draw_circle(p + Vector2(0, -3), 4.0, Color("#a3d982"))
+
+
+func _draw_carrot(p: Vector2) -> void:
+	# p is where the carrot pokes out of the crate; body tapers down, fronds up.
+	var top := p.y - 12.0
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(p.x - 4, top), Vector2(p.x + 4, top), Vector2(p.x, p.y)]),
+		Color("#e07a2e"))
+	var ftop := Vector2(p.x, top)
+	draw_line(ftop, ftop + Vector2(-3, -6), Color("#4e8f3a"), 1.5)
+	draw_line(ftop, ftop + Vector2(0, -7), Color("#4e8f3a"), 1.5)
+	draw_line(ftop, ftop + Vector2(3, -6), Color("#4e8f3a"), 1.5)
+
+
+func _draw_vet_stop() -> void:
+	# A vet nurse tending a small animal on a table beside the VET sign, so the stop
+	# reads as care being given rather than a bare marker.
+	draw_rect(Rect2(8, -26, 40, 4), Color("#cfcabe"), true)   # table top
+	draw_line(Vector2(12, -22), Vector2(12, 0), Color("#9a958a"), 2.0)
+	draw_line(Vector2(44, -22), Vector2(44, 0), Color("#9a958a"), 2.0)
+	draw_circle(Vector2(30, -32), 5.0, Color("#b0a89a"))       # patient body
+	draw_circle(Vector2(36, -34), 3.2, Color("#b0a89a"))       # patient head
+	draw_line(Vector2(38, -35), Vector2(41, -37), Color("#8f877a"), 1.4)  # ear
+	_draw_person(-8.0, 1.0, Color("#4a9b8e"), true)
+
+
+func _draw_person(x: float, facing: float, torso_col: Color, medic: bool) -> void:
+	# A simple androgynous, gender-neutral figure. facing +1 reaches to the right.
+	var skin := Color("#e6c6a4")
+	draw_line(Vector2(x - 3, -14), Vector2(x - 3, 0), Color("#33415c"), 3.0)
+	draw_line(Vector2(x + 3, -14), Vector2(x + 3, 0), Color("#33415c"), 3.0)
+	draw_rect(Rect2(x - 7, -34, 14, 21), torso_col, true)
+	draw_line(Vector2(x - 6 * facing, -31), Vector2(x - 11 * facing, -21), torso_col, 3.0)
+	draw_line(Vector2(x + 6 * facing, -31), Vector2(x + 13 * facing, -27), skin, 3.0)  # reaching arm
+	draw_circle(Vector2(x, -40), 6.0, skin)
+	draw_arc(Vector2(x, -41), 6.2, PI, TAU, 10, Color("#5a4632"), 3.0)   # hair
+	if medic:
+		draw_rect(Rect2(x - 1, -30, 2, 8), Color("#d64d3f"), true)       # chest cross
+		draw_rect(Rect2(x - 3.5, -27, 7, 2), Color("#d64d3f"), true)
+
+
+func _draw_sanctuary(font: Font) -> void:
+	# A little shelter building rather than a signboard — the journey's destination
+	# should look like somewhere the animals arrive, not another roadside marker.
+	draw_rect(Rect2(-48, -70, 96, 70), Color("#cdb48b"), true)            # walls
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-56, -70), Vector2(56, -70), Vector2(0, -104)]),
+		Color("#6b9c72"))                                                 # gable roof
+	draw_rect(Rect2(-13, -40, 26, 40), Color("#7a5a3c"), true)            # door
+	draw_circle(Vector2(7, -20), 1.6, Color("#d8c39a"))                   # doorknob
+	draw_rect(Rect2(-38, -58, 16, 16), Color("#a9d0dc"), true)            # windows
+	draw_rect(Rect2(22, -58, 16, 16), Color("#a9d0dc"), true)
+	var bw := 96.0
+	draw_rect(Rect2(-bw * 0.5, -90, bw, 18), Color("#3f6f4b"), true)      # banner
+	draw_string(font, Vector2(-bw * 0.5 + 6.0, -76), "SANCTUARY", HORIZONTAL_ALIGNMENT_CENTER, bw - 12.0, 13, Color("#eef3ea"))
+	draw_line(Vector2(0, -104), Vector2(0, -120), Color("#3d4b38"), 2.0)  # flagpole
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0, -120), Vector2(15, -116), Vector2(0, -112)]),
+		Color("#e0b34a"))
 
 
 func _draw_trailer() -> void:
