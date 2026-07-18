@@ -832,6 +832,17 @@ func _draw_vehicle() -> void:
 		_draw_emote(over_cab.x, over_cab.y)
 
 
+func _draw_driver(seat_x: float, head_y: float, scale := 1.0) -> void:
+	# The player, a simple gender-neutral figure seated at the controls: shoulders,
+	# head, a cap, and a hand reaching forward to steer. Faces the way of travel.
+	var skin := Color("#e3c29e")
+	var shirt := Color("#455f9c")
+	draw_rect(Rect2(seat_x - 5.0 * scale, head_y + 3.0 * scale, 10.0 * scale, 11.0 * scale), shirt, true)
+	draw_line(Vector2(seat_x + 3.0 * scale, head_y + 6.0 * scale), Vector2(seat_x + 9.0 * scale, head_y + 8.0 * scale), skin, 2.4 * scale)
+	draw_circle(Vector2(seat_x, head_y), 5.0 * scale, skin)
+	draw_arc(Vector2(seat_x, head_y - 0.5 * scale), 5.2 * scale, PI, TAU, 10, Color("#4b3a2a"), 2.6 * scale)
+
+
 func _veh_tuktuk(bw: float, bh: float, body_top: float, col: Color) -> void:
 	# A rounded driver pod at the front under a bright canopy on posts — the classic
 	# tuk-tuk look over an open rear bed where the animals ride.
@@ -847,6 +858,7 @@ func _veh_tuktuk(bw: float, bh: float, body_top: float, col: Color) -> void:
 	draw_circle(Vector2(-bw * 0.48, body_top - 22.0), 3.0, canopy)
 	draw_circle(Vector2(bw * 0.50, body_top - 22.0), 3.0, canopy)
 	draw_circle(Vector2(bw * 0.54, body_top + bh * 0.4), 2.6, Color("#f2e28a"))  # headlight
+	_draw_driver(bw * 0.24, body_top - 4.0, 0.85)
 
 
 func _veh_jeep(bw: float, bh: float, body_top: float, col: Color) -> void:
@@ -863,6 +875,7 @@ func _veh_jeep(bw: float, bh: float, body_top: float, col: Color) -> void:
 	# Wheel arches and a headlight.
 	draw_rect(Rect2(-bw * 0.5, body_top + bh * 0.55, bw, bh * 0.5), col.darkened(0.18), true)
 	draw_circle(Vector2(bw * 0.47, body_top + bh * 0.35), 3.2, Color("#f2e28a"))
+	_draw_driver(bw * 0.06, body_top - 6.0, 0.9)
 
 
 func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
@@ -874,6 +887,7 @@ func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
 	draw_rect(Rect2(-bw * 0.5, body_top - 6.0, bw * 0.64, 6.0), col.darkened(0.25), true)  # bed rail
 	draw_rect(Rect2(bw * 0.46, body_top + bh * 0.5, bw * 0.06, bh * 0.6), Color("#40352c"), true)  # bumper
 	draw_circle(Vector2(bw * 0.5, body_top + bh * 0.3), 3.0, Color("#f2e28a"))  # headlight
+	_draw_driver(bw * 0.32, body_top - 16.0, 0.9)  # in the cab window
 
 
 func _passenger_load_offset() -> float:
