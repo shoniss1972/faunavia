@@ -14,7 +14,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Faunavia"
+config/name="Wildlife Rescue"
 run/main_scene="res://src/level_select.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 

@@ -36,7 +36,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
 
-	_add_label(column, "FAUNAVIA — Wildlife Rescue", 30)
+	_add_label(column, "Wildlife Rescue", 30)
 	_add_label(column, "★ %d / %d    ·    deliver · keep them calm · thrill them" % [
 		GameState.total_stars(), Levels.count() * 3], 17, STAR_GOLD)
 

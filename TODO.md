@@ -413,10 +413,11 @@ milestones (noted inline). Revisit after the 3–5 player test.
   legible fail source tied to vehicle choice (a bigger/heavier vehicle resists
   it), reinforcing why the load wants the right vehicle. Keep the tone playful and
   the escape harmless, per the design rules.
-- **Rename the home-screen title.** "FAUNAVIA — Wildlife Rescue" uses the internal
-  working codename, and "driving toy" (Gate 1's shorthand) is silly for anything
-  player-facing. Choose a real player-facing title and use it on the level-select
-  header (and window/app name). Owner decision — needs a chosen name before wiring.
+- **Rename the home-screen title.** DONE (2026-07-18) — the game is now titled
+  **Wildlife Rescue** (owner's choice). The codename and the "Driving Toy"
+  shorthand are gone from every player-facing surface: the in-level banner
+  (`main.tscn`), the level-select header (`level_select.gd`), and the window/app
+  name (`project.godot`).
 
 ## Explicitly not next
 
