@@ -175,8 +175,10 @@ func _add_manifest_row(parent: Node, swatch_colour: Color, text: String, height:
 
 
 func _animal_line(id: String) -> String:
+	# Lead with the memorable trait (milestone 4): the personality phrase tells the
+	# player how to treat this passenger; size/weight stay for capacity and handling.
 	var data: Dictionary = Animals.get_data(id)
-	return "%s  ·  size %d, %dkg, %s" % [data["name"], data["size"], int(data["weight"]), data["temperament"]]
+	return "%s  ·  %s\nsize %d, %dkg" % [data["name"], Animals.personality(id), data["size"], int(data["weight"])]
 
 
 func _gear_line(eq: String) -> String:

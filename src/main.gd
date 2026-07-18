@@ -74,7 +74,7 @@ const HEAD_W_PER_RADIUS := 3.5     # nominal sprite width in units of drawn radi
 const HEAD_SPACING := 0.75         # gap between head centres, as a fraction of head width
 const MIN_HEAD := 5.0              # never shrink a head below this, even when crowded
 const MAX_HEAD := 11.0             # nor grow one past this — else a big, near-empty
-                                   # truck bed balloons the animals vs smaller vehicles
+								   # truck bed balloons the animals vs smaller vehicles
 
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
