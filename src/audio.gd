@@ -16,7 +16,8 @@ var _sfx: Array[AudioStreamPlayer] = []   # a small pool for one-shot cues
 var _sfx_next := 0
 var _engine: AudioStreamPlayer
 var _music: AudioStreamPlayer
-var _clips := {}                          # name -> AudioStreamWAV
+var _clips := {}                          # name -> AudioStream (procedural or file)
+var _voices := {}                         # animal id -> voice AudioStream (optional)
 var _engine_shape := ""
 var muted := false
 var _mute_button: Button
@@ -64,6 +65,21 @@ func play(clip_name: String, volume_db := -8.0, pitch := 1.0) -> void:
 func start_music() -> void:
 	if not _music.playing:
 		_music.play()
+
+
+func boarded(ids: Array) -> void:
+	# Voice the crew as they settle in — each animal's own call, staggered so a
+	# full load doesn't blurt at once. Falls back to the generic chirp with no voices.
+	if _voices.is_empty():
+		play("load", -8.0)
+		return
+	for i in range(ids.size()):
+		var id: String = ids[i]
+		var when := float(i) * 0.17
+		if when <= 0.001:
+			play_voice(id, -7.0)
+		else:
+			get_tree().create_timer(when).timeout.connect(func(): play_voice(id, -7.0))
 
 
 func engine(speed: float, max_speed: float, shape: String) -> void:
@@ -145,24 +161,48 @@ func _load_overrides() -> void:
 	# present, so recorded/generated sounds (see docs/AUDIO_BRIEF.md) can be dropped
 	# in one at a time — anything missing keeps its synthesised fallback.
 	for key in _clips.keys():
-		for ext in [".ogg", ".wav"]:
-			var path := "res://audio/" + String(key) + String(ext)
-			if not ResourceLoader.exists(path):
-				continue
+		var res: AudioStream = _find_audio("res://audio/" + String(key))
+		if res != null:
+			if key.begins_with("engine_") or key == "music":
+				_set_loop(res)
+			_clips[key] = res
+	# Optional per-animal voices (voice_<id>), played on load-in and on a bail.
+	for id in Animals.DATA.keys():
+		var v: AudioStream = _find_audio("res://audio/voice_" + String(id))
+		if v != null:
+			_voices[id] = v
+
+
+func _find_audio(base: String) -> AudioStream:
+	for ext in [".ogg", ".wav", ".mp3"]:
+		var path := base + String(ext)
+		if ResourceLoader.exists(path):
 			var res = load(path)
 			if res is AudioStream:
-				if key.begins_with("engine_") or key == "music":
-					_set_loop(res)
-				_clips[key] = res
-			break
+				return res
+	return null
 
 
-func _set_loop(res) -> void:
-	if res is AudioStreamOggVorbis:
+func _set_loop(res: AudioStream) -> void:
+	if res is AudioStreamOggVorbis or res is AudioStreamMP3:
 		res.loop = true
-	elif res is AudioStreamWAV and res.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+	elif res is AudioStreamWAV:
+		# Loop the whole sample. loop_end is in frames; derive it from the true
+		# length and rate so it's correct regardless of the imported format (PCM,
+		# QOA, etc.) rather than guessing from the byte count.
 		res.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		res.loop_end = res.data.size() / 2  # 16-bit mono frames
+		res.loop_begin = 0
+		res.loop_end = int(res.get_length() * float(res.mix_rate))
+
+
+func play_voice(animal_id: String, volume_db := -8.0, pitch := 1.0) -> void:
+	if _voices.has(animal_id):
+		var p := _sfx[_sfx_next]
+		_sfx_next = (_sfx_next + 1) % _sfx.size()
+		p.stream = _voices[animal_id]
+		p.volume_db = volume_db
+		p.pitch_scale = pitch
+		p.play()
 
 
 func _wav(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:

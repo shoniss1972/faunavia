@@ -314,6 +314,7 @@ func _bail_animal(index: int) -> void:
 	comforts[index] = 0.0
 	states[index] = "annoyed"
 	Audio.play("bail", -6.0)
+	Audio.play_voice(passengers[index], -5.0, 1.08)
 	message_label.text = "%s had enough and jumped off!" % Animals.display_name(passengers[index])
 
 
@@ -403,7 +404,7 @@ func _update_loading(delta: float, drive_requested: bool) -> void:
 			is_loaded = true
 			for i in states.size():
 				states[i] = "content"
-			Audio.play("load", -8.0)
+			Audio.boarded(passengers)
 			message_label.text = "%s aboard! Reach the sanctuary — mind the ride." % _crew_label().capitalize()
 	elif drive_requested:
 		loading = true
@@ -535,10 +536,11 @@ func _draw() -> void:
 
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
-		# Stops are places, not pickups: the food stall, vet, and sanctuary stay
-		# drawn as the vehicle passes through, so they don't vanish on arrival. (A
-		# collectible fuel can is the one thing that should disappear once taken.)
-		var still_visible: bool = node["type"] != "fuel" or not nodes_used.has(node["x"])
+		# The vet and sanctuary are places — they stay drawn as the vehicle passes
+		# through. Food and fuel are consumed, so once used (eaten / collected) they
+		# vanish: the crate of veg shouldn't still be full after the crew ate it.
+		var is_place: bool = node["type"] == "vet" or node["type"] == "sanctuary"
+		var still_visible: bool = is_place or not nodes_used.has(node["x"])
 		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible)
 	_draw_trailer()
 	_draw_vehicle()
