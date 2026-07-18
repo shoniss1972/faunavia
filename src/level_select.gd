@@ -65,7 +65,10 @@ func _build() -> void:
 			btn.text = "%s\n%s" % [lvl["title"], _stars_str(int(GameState.stars[i]))]
 			btn.pressed.connect(_on_level_chosen.bind(i))
 		else:
-			btn.text = "%s\n🔒 Locked" % lvl["title"]
+			# A locked level teases its new wrinkle instead of a bare padlock, so the
+			# player has a reason to want the next mission (milestone 7).
+			var hook: String = lvl.get("hook", "")
+			btn.text = "🔒 %s\n%s" % [lvl["title"], hook] if hook != "" else "%s\n🔒 Locked" % lvl["title"]
 		grid.add_child(btn)
 
 	var reset := Button.new()

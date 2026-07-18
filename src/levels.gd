@@ -14,6 +14,9 @@ extends RefCounted
 #   vehicle   — which vehicle runs this level; its capacity holds the cargo
 #   deliver   — animal ids that must be aboard (auto-loaded on the prep brief)
 #   equipment — gear the load requires (auto-included; the brief explains why)
+#   hook      — a one-line teaser of this mission's new wrinkle, shown on the
+#               locked button in level select and in the result screen's "next"
+#               teaser. Hint the new problem/character; don't spell out the rules.
 #   routes    — optional [safe, rough] choice surfaced in prep (see prep.gd)
 # Track fields shape the drive so no two missions feel the same:
 #   length — finish distance      rough — hill height (hillier punishes speed)
@@ -24,18 +27,21 @@ const DATA := [
 		"title": "Level 1 — First Rescue",
 		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
 		"length": 1500.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
+		"hook": "Learn the ropes with a placid wombat.",
 		"brief": "Meet the wombat — placid and unbothered. Coax it aboard the cargo trike and roll gently to the sanctuary.",
 	},
 	{
 		"title": "Level 2 — Nervous Passenger",
 		"vehicle": "bicycle", "deliver": ["rabbit"], "equipment": [],
 		"length": 1700.0, "rough": 0.85, "freq": 1.05, "phase": 300.0,
+		"hook": "A timid rabbit that bolts on rough ground.",
 		"brief": "The rabbit is timid — every jolt frightens it. Take the bumps slowly, or it may lose its nerve and leap off before you arrive.",
 	},
 	{
 		"title": "Level 3 — Which Road?",
 		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
 		"length": 1900.0, "rough": 0.8, "freq": 1.05, "phase": 120.0,
+		"hook": "Your first real choice: safe road or rough shortcut.",
 		"brief": "Two roads to the sanctuary. The rabbit is timid — pick the route that suits your passengers.",
 		# A real choice: the gentle road is slow but kind and has a feeding stop;
 		# the shortcut is quick but rough, and a nervous animal may not survive it
@@ -65,6 +71,7 @@ const DATA := [
 		"vehicle": "jeep", "deliver": ["fox", "rabbit"],
 		"equipment": ["divided_cage", "gloves"],
 		"length": 1950.0, "rough": 0.85, "freq": 0.95, "phase": 500.0,
+		"hook": "A fox and rabbit who can't share a cage.",
 		"brief": "The fox eyes the rabbit like lunch. A divided cage keeps the peace — and the sly fox needs gloves before you handle it.",
 	},
 	{
@@ -75,6 +82,7 @@ const DATA := [
 			{"type": "vet", "at": 0.5},
 			{"type": "sanctuary", "at": 1.0},
 		],
+		"hook": "Too heavy for the jeep — the truck earns its place.",
 		"brief": "The tortoise and wombat together are too heavy for the jeep — only the truck will do. Pack a ramp so the tortoise can climb aboard, and settle in for the long haul.",
 	},
 ]

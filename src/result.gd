@@ -197,9 +197,10 @@ func _teaser() -> String:
 	if next_index >= Levels.count():
 		return "That was the final rescue — the whole convoy is home."
 	var next: Dictionary = Levels.get_level(next_index)
+	var hook: String = next.get("hook", next.get("brief", ""))
 	if GameState.is_unlocked(next_index):
-		return "Next — %s: %s" % [next["title"], next["brief"]]
-	return "Earn at least one star to unlock %s." % next["title"]
+		return "Next — %s: %s" % [next["title"], hook]
+	return "Earn at least one star to unlock %s — %s" % [next["title"], hook]
 
 
 func _next_available() -> bool:

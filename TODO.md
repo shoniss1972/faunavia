@@ -124,8 +124,10 @@ administrative?
 - [x] Add six animals total.
 - [x] Build 10–15 levels. (12 levels)
 - [x] Add basic save progress.
-- [ ] Make the next mission and vehicle desirable rather than merely unlocked.
-- [ ] Show the player what new problem, character, route, or capability is coming.
+- [x] Make the next mission and vehicle desirable rather than merely unlocked.
+      (Level-select hooks + result-screen teaser; see milestone 7.)
+- [x] Show the player what new problem, character, route, or capability is coming.
+      (Per-level `hook` teaser; see milestone 7.)
 
 ## Gate 5 — External phone test
 
@@ -234,26 +236,29 @@ that its 3★ is faster/shorter; the safe road has no scored *cost* yet, just it
 length. The trade-off is real but completes when fuel returns (milestone 10) and
 prices the long road. Do not over-tune around this now.
 
-### 4. Give every animal one memorable gameplay identity
+### 4. Give every animal one memorable gameplay identity — DONE (2026-07-18)
 
-Animals already differ in data. The next task is to make players anticipate them
-as characters rather than learn invisible multipliers.
+Each animal now carries a plain-language `personality` phrase in `Animals.DATA`
+(surfaced via `Animals.personality(id)`). The prep brief leads each passenger row
+with that phrase instead of a bare temperament word, so the player reads how to
+treat the animal — not an invisible multiplier — before departing.
 
-Target identities:
+Target identities (as shipped in the brief):
 
-- **Wombat:** forgiving, placid, ideal for learning.
-- **Rabbit:** highly sensitive to bumps; panics early.
-- **Fox:** manageable alone but creates handling and compatibility problems.
-- **Tortoise:** very heavy but emotionally unflappable.
-- **Parrot:** dramatic and lively; can unsettle a nervous companion.
-- **Goat:** stubborn, heavy, and difficult to handle without the right capability.
+- **Wombat:** "shrugs off the roughest ride" — forgiving, ideal for learning.
+- **Rabbit:** "panics on bumps — drive it gently" — highly bump-sensitive.
+- **Fox:** "a sly escape artist; handle with gloves" — handling + compatibility.
+- **Tortoise:** "heavy but unflappable; needs a ramp" — sturdy, boards slowly.
+- **Parrot:** "loud and dramatic when jostled" — lively, unsettles a nervous mate.
+- **Goat:** "a stubborn wanderer; keep it leashed" — needs the leash capability.
 
-- [ ] Make each identity visible in mission text, expression, behaviour, or a
-      concise trait badge.
-- [ ] Avoid exposing raw sensitivity multipliers to the player.
-- [ ] Remove or merge traits that players cannot remember or use when deciding.
+- [x] Make each identity visible in mission text, expression, behaviour, or a
+      concise trait badge — the brief row now leads with the trait phrase.
+- [x] Avoid exposing raw sensitivity multipliers to the player — phrases only.
+- [x] Remove or merge traits that players cannot remember or use when deciding —
+      the bare temperament word is folded into the memorable phrase.
 - [ ] Verify that a tester can describe at least three animals differently after a
-      short session.
+      short session. (Needs the next human playtest.)
 
 ### 5. Rebuild the test campaign around five memorable missions — DONE (2026-07-18)
 
@@ -277,9 +282,9 @@ totals count only active levels.
 - [x] Cut/park missions that just repeat a manifest with larger numbers (the
       original 12 are archived, not deleted).
 
-Note: milestone 4 (memorable per-animal identities) is only lightly touched here
-via the mission briefs; its explicit trait-badge / describe-three-animals tasks
-remain open. Human playtest still needed to confirm the arc reads unaided.
+Note: milestone 4 (memorable per-animal identities) is now addressed directly —
+each brief row leads with the animal's personality phrase. Human playtest still
+needed to confirm the arc reads unaided and testers can describe the animals.
 
 ### 6. Make vehicle progression solve visible problems
 
@@ -304,14 +309,21 @@ Player-facing vehicle qualities should be limited and legible:
 **Acceptance test:** A player says why they chose a vehicle in terms of the load
 or route, not simply because it is the newest or biggest.
 
-### 7. Make progression communicate curiosity
+### 7. Make progression communicate curiosity — DONE (2026-07-18)
 
-- [ ] Replace bare locked-level presentation with teasers for the next new problem
-      or character.
-- [ ] Preview upcoming animals, routes, or vehicles without exposing every rule.
-- [ ] Make the next unlock concrete: what becomes possible, easier, or different?
-- [ ] Ensure a one-star completion can unlock progress, while the result screen
-      makes replay for mastery attractive rather than compulsory.
+Each level now carries a one-line `hook` in `Levels.DATA`. The level-select grid
+shows it under the padlock on locked missions (so the next mission teases its new
+wrinkle instead of a bare "🔒 Locked"), and the result screen's "next" teaser
+uses the same concise hook rather than dumping the full brief.
+
+- [x] Replace bare locked-level presentation with teasers for the next new problem
+      or character — locked buttons now read "🔒 <title> / <hook>".
+- [x] Preview upcoming animals, routes, or vehicles without exposing every rule —
+      hooks name the wrinkle (route choice, incompatible pair, the truck) only.
+- [x] Make the next unlock concrete: what becomes possible, easier, or different?
+- [x] Ensure a one-star completion can unlock progress, while the result screen
+      makes replay for mastery attractive rather than compulsory — unlock needs
+      one star; the result screen offers Retry for three stars alongside Continue.
 
 The progression loop should read as:
 
@@ -401,6 +413,10 @@ milestones (noted inline). Revisit after the 3–5 player test.
   legible fail source tied to vehicle choice (a bigger/heavier vehicle resists
   it), reinforcing why the load wants the right vehicle. Keep the tone playful and
   the escape harmless, per the design rules.
+- **Rename the home-screen title.** "FAUNAVIA — Wildlife Rescue" uses the internal
+  working codename, and "driving toy" (Gate 1's shorthand) is silly for anything
+  player-facing. Choose a real player-facing title and use it on the level-select
+  header (and window/app name). Owner decision — needs a chosen name before wiring.
 
 ## Explicitly not next
 
