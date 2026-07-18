@@ -58,6 +58,10 @@ Implemented on `main`:
 - Rough driving can make an animal bail at zero comfort; the run continues but
   loses delivery credit and stars.
 - Food and vet route nodes restore comfort.
+- Procedural audio (no sound files): a speed-tracked engine loop per vehicle,
+  comfort cues (jolt thud, "about to jump" chirp, a bail hop), lifeline stings
+  (munch / vet chime / rescue fanfare / sanctuary chord), UI taps, a result-star
+  tally, a soft music bed, and a floating mute toggle. See `src/audio.gd`.
 - Fuel exists but is disabled behind `FUEL_ENABLED` until route choice makes it
   meaningful.
 
