@@ -81,6 +81,11 @@ func _build() -> void:
 	column.add_child(panel)
 	_add_label(panel, _hint(earned, passengers), 18)
 
+	# Credit a lifeline stop when one pulled an arriving animal back from the brink.
+	var saved_note := _saved_note()
+	if saved_note != "":
+		_add_label(column, saved_note, 16, OK_GREEN)
+
 	var teaser := "Deliver at least one animal to move on." if failed else _teaser()
 	if teaser != "":
 		_add_label(column, teaser, 16, MUTED)
@@ -190,6 +195,13 @@ func _hint(earned: int, passengers: Array) -> String:
 		if p.get("rattled", false):
 			rattled.append(p.get("name", "?"))
 	return "Everyone made it, but %s got rattled on the rough ground. Ease off before sharp crests to earn the third star." % _name_list(rattled)
+
+
+func _saved_note() -> String:
+	var saved: Array = result.get("saved_by_stop", [])
+	if saved.is_empty():
+		return ""
+	return "🥕 A rest stop steadied %s just before they bolted." % _name_list(saved)
 
 
 func _teaser() -> String:

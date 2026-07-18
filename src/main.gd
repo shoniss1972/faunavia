@@ -152,8 +152,11 @@ var loading := false
 var load_t := 0.0
 var finish_hold := 0.0
 var advancing := false
+var relief_t := 0.0                    # seconds of visible relief after a food/vet stop
+var stop_saved_idx: Array[int] = []    # passengers a stop pulled back from the brink
 
 const FINISH_HOLD_TIME := 2.0   # seconds to celebrate arrival before moving on
+const RELIEF_TIME := 1.8        # how long the crew visibly perks up after a stop
 
 
 func _ready() -> void:
@@ -211,6 +214,9 @@ func _process(delta: float) -> void:
 
 	_check_route_nodes()
 
+	if relief_t > 0.0:
+		relief_t = max(relief_t - delta, 0.0)
+
 	_update_suspension(delta)
 	_update_comfort(delta)
 
@@ -252,7 +258,11 @@ func _update_comfort(delta: float) -> void:
 		if comforts[i] <= 0.0:
 			_bail_animal(i)
 			continue
-		if comforts[i] <= COMFORT_ANNOYED:
+		# Just after a food/vet stop the whole crew visibly perks up, so the lifeline
+		# reads as a felt relief and not just a line of text (milestone 8).
+		if relief_t > 0.0:
+			states[i] = "delighted"
+		elif comforts[i] <= COMFORT_ANNOYED:
 			states[i] = "annoyed"
 			ever_annoyed[i] = true
 		elif comforts[i] >= COMFORT_DELIGHTED and speed > 120.0:
@@ -312,22 +322,28 @@ func _check_route_nodes() -> void:
 				# A top-up: lifts spirits, and can pull a fretting animal back from
 				# the brink if you reach it before it bails.
 				var rescued := _restore_comfort(FOOD_COMFORT)
+				relief_t = RELIEF_TIME
 				message_label.text = ("Fed the crew — steadied %s just in time!" % rescued) if rescued != "" else "Fed the crew — spirits lift."
 			"vet":
 				# A full reset: everyone still aboard is calmed completely.
 				_restore_comfort(COMFORT_MAX)
+				relief_t = RELIEF_TIME
 				message_label.text = "Vet check — everyone's calm again."
 
 
 func _restore_comfort(amount: float) -> String:
-	# Top up every animal still aboard. Returns the name of one that was on the
-	# verge of bailing and got saved, for the message — empty if none was.
+	# Top up every animal still aboard. Records every animal that was on the verge
+	# of bailing (so the result screen can credit the stop), and returns the first
+	# such name for the on-pass message — empty if none was in danger.
 	var saved := ""
 	for i in passengers.size():
 		if bailed[i]:
 			continue
-		if comforts[i] <= COMFORT_PANIC and saved == "":
-			saved = Animals.display_name(passengers[i])
+		if comforts[i] <= COMFORT_PANIC:
+			if saved == "":
+				saved = Animals.display_name(passengers[i])
+			if i not in stop_saved_idx:
+				stop_saved_idx.append(i)
 		comforts[i] = min(comforts[i] + amount, COMFORT_MAX)
 	return saved
 
@@ -390,12 +406,19 @@ func _advance_after_delivery() -> void:
 			"arrived": not bailed[i],
 			"rattled": ever_annoyed[i],
 		})
+	# Credit any lifeline stop that pulled an animal back from the brink — but only
+	# if that animal actually arrived (a later bail cancels the save it earned).
+	var saved_by_stop: Array = []
+	for i in stop_saved_idx:
+		if not bailed[i]:
+			saved_by_stop.append(Animals.display_name(passengers[i]))
 	var detail := {
 		"level": GameState.current_level,
 		"earned": earned,
 		"total": total,
 		"delivered": delivered,
 		"passengers": roster,
+		"saved_by_stop": saved_by_stop,
 	}
 	GameState.record_result(GameState.current_level, earned, detail)
 	get_tree().change_scene_to_file("res://src/result.tscn")
@@ -873,6 +896,11 @@ func _draw_emote(screen_x: float, top_y: float) -> void:
 			worst = i
 	if worst < 0:
 		return
+	# A stop just topped them up: shout the relief so the lifeline is unmistakable.
+	if relief_t > 0.0:
+		draw_string(ThemeDB.fallback_font, Vector2(screen_x - 90.0, top_y), "Phew!",
+			HORIZONTAL_ALIGNMENT_CENTER, 180.0, 20, Color("#2f7d4f"))
+		return
 	var text := ""
 	var tint := Color("#2c2620")
 	if comforts[worst] <= COMFORT_PANIC:
@@ -952,6 +980,8 @@ func _reset_run() -> void:
 	load_t = 0.0
 	finish_hold = 0.0
 	advancing = false
+	relief_t = 0.0
+	stop_saved_idx.clear()
 	drive_pressed = false
 	brake_pressed = false
 	finished = false
