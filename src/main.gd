@@ -904,7 +904,7 @@ func _veh_tuktuk(bw: float, bh: float, body_top: float, col: Color) -> void:
 	draw_circle(Vector2(-bw * 0.48, body_top - 22.0), 3.0, canopy)
 	draw_circle(Vector2(bw * 0.50, body_top - 22.0), 3.0, canopy)
 	draw_circle(Vector2(bw * 0.54, body_top + bh * 0.4), 2.6, Color("#f2e28a"))  # headlight
-	_draw_driver(bw * 0.24, body_top - 4.0, 0.85)
+	_draw_driver(bw * 0.26, body_top - 9.0, 1.35)
 
 
 func _veh_jeep(bw: float, bh: float, body_top: float, col: Color) -> void:
@@ -921,7 +921,7 @@ func _veh_jeep(bw: float, bh: float, body_top: float, col: Color) -> void:
 	# Wheel arches and a headlight.
 	draw_rect(Rect2(-bw * 0.5, body_top + bh * 0.55, bw, bh * 0.5), col.darkened(0.18), true)
 	draw_circle(Vector2(bw * 0.47, body_top + bh * 0.35), 3.2, Color("#f2e28a"))
-	_draw_driver(bw * 0.06, body_top - 6.0, 0.9)
+	_draw_driver(bw * 0.06, body_top - 11.0, 1.4)
 
 
 func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
@@ -933,7 +933,7 @@ func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
 	draw_rect(Rect2(-bw * 0.5, body_top - 6.0, bw * 0.64, 6.0), col.darkened(0.25), true)  # bed rail
 	draw_rect(Rect2(bw * 0.46, body_top + bh * 0.5, bw * 0.06, bh * 0.6), Color("#40352c"), true)  # bumper
 	draw_circle(Vector2(bw * 0.5, body_top + bh * 0.3), 3.0, Color("#f2e28a"))  # headlight
-	_draw_driver(bw * 0.32, body_top - 16.0, 0.9)  # in the cab window
+	_draw_driver(bw * 0.30, body_top - 22.0, 1.5)  # in the cab window
 
 
 func _passenger_load_offset() -> float:
