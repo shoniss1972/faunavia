@@ -1,14 +1,17 @@
 class_name Levels
 extends RefCounted
 
-# The active campaign is a focused FIVE-mission test path (Gate 5 revision). Each
-# mission asks one distinct question, has its own terrain identity, and motivates
-# the next vehicle by the load it carries:
+# The active campaign is the full TWELVE-mission set. The first five are the
+# refined Gate 5 test path (each asks one distinct question and has its own
+# terrain identity); levels 6–12 grow the cast, gear, trailer, and route stops
+# toward the grand convoy:
 #   1 First Rescue      — teach the loop: coax aboard, drive, arrive (wombat, trike)
 #   2 Nervous Passenger — rough driving has a consequence (timid rabbit bails)
 #   3 Which Road?       — a real route choice (safe detour vs rough shortcut)
 #   4 Awkward Companions— compatibility + handling (fox + rabbit: cage + gloves)
 #   5 Heavy Rescue      — a load the jeep can't carry, so the truck earns its place
+#   6–12                — new pairings, the trailer, multi-animal hauls, lifeline
+#                         stops, up to the five-animal grand convoy
 #
 # Level fields:
 #   vehicle   — which vehicle runs this level; its capacity holds the cargo
@@ -86,69 +89,36 @@ const DATA := [
 		"hook": "Too heavy for the jeep — the truck earns its place.",
 		"brief": "The tortoise and wombat together are too heavy for the jeep — only the truck will do. Pack a ramp so the tortoise can climb aboard, and settle in for the long haul.",
 	},
-]
-
-# The original twelve-level set, kept for development and reference — NOT the
-# active campaign. The five-mission path above is what external testers play; do
-# not use raw level count as evidence the prototype works (see TODO milestone 5).
-const ARCHIVED_LEVELS := [
-	{
-		"title": "Level 1 — First Rescue",
-		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
-		"length": 1650.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
-		"brief": "Take the wombat to the sanctuary on the cargo trike.",
-	},
-	{
-		"title": "Level 2 — Handle With Care",
-		"vehicle": "bicycle", "deliver": ["fox"], "equipment": ["gloves"],
-		"length": 1750.0, "rough": 0.6, "freq": 1.0, "phase": 300.0,
-		"brief": "The fox is sly. Bring gloves before you load it.",
-	},
-	{
-		"title": "Level 3 — Two Aboard",
-		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
-		"length": 1900.0, "rough": 0.8, "freq": 1.05, "phase": 120.0,
-		"brief": "The jeep can carry the wombat and rabbit together.",
-	},
-	{
-		"title": "Level 4 — Keep the Peace",
-		"vehicle": "jeep", "deliver": ["fox", "rabbit"],
-		"equipment": ["divided_cage", "gloves"],
-		"length": 1950.0, "rough": 0.9, "freq": 0.95, "phase": 500.0,
-		"brief": "Fox and rabbit together needs a divided cage — and the fox needs gloves.",
-	},
-	{
-		"title": "Level 5 — Slow and Steady",
-		"vehicle": "jeep", "deliver": ["tortoise"], "equipment": ["ramp"],
-		"length": 2100.0, "rough": 0.6, "freq": 1.1, "phase": 800.0,
-		"brief": "The tortoise can't clamber up — pack a loading ramp.",
-	},
 	{
 		"title": "Level 6 — Odd Couple",
 		"vehicle": "jeep", "deliver": ["goat", "parrot"], "equipment": ["leash"],
 		"length": 2000.0, "rough": 1.0, "freq": 1.15, "phase": 250.0,
-		"brief": "The goat wanders off without a leash. The parrot just tags along.",
+		"hook": "A stubborn goat and a chattering parrot share the jeep.",
+		"brief": "The goat wanders off without a leash. The parrot just tags along — loud, but no trouble.",
 	},
 	{
 		"title": "Level 7 — Loud and Timid",
 		"vehicle": "jeep", "deliver": ["parrot", "rabbit"],
 		"equipment": ["divided_cage"],
 		"length": 1900.0, "rough": 1.1, "freq": 1.0, "phase": 640.0,
-		"brief": "The parrot's racket rattles the timid rabbit — separate them.",
+		"hook": "A loud parrot rattling a timid rabbit — keep them apart.",
+		"brief": "The parrot's racket frightens the timid rabbit. A divided cage keeps the noise on its own side.",
 	},
 	{
 		"title": "Level 8 — Mixed Cargo",
 		"vehicle": "truck", "deliver": ["wombat", "goat", "fox"],
 		"equipment": ["gloves", "leash"],
 		"length": 2300.0, "rough": 1.0, "freq": 0.9, "phase": 400.0,
-		"brief": "Three aboard the truck, two of them needing gear.",
+		"hook": "Three aboard the truck, two of them needing gear.",
+		"brief": "Three passengers on the truck: the sly fox needs gloves, the goat needs a leash, and the wombat rides easy.",
 	},
 	{
 		"title": "Level 9 — Trike Overflow",
 		"vehicle": "bicycle", "deliver": ["wombat", "goat"],
 		"equipment": ["leash"], "trailer": true,
 		"length": 2100.0, "rough": 1.25, "freq": 1.2, "phase": 150.0,
-		"brief": "Two won't fit on the trike alone — hitch a trailer.",
+		"hook": "Too many for the trike — hitch a trailer.",
+		"brief": "The wombat and goat won't fit on the trike alone. Hitch a trailer for the overflow, and leash the goat.",
 	},
 	{
 		"title": "Level 10 — The Long Haul",
@@ -156,19 +126,19 @@ const ARCHIVED_LEVELS := [
 		"equipment": ["ramp", "gloves"],
 		"length": 2700.0, "rough": 1.0, "freq": 0.95, "phase": 700.0,
 		"route": [
-			{"type": "fuel", "at": 0.30},
 			{"type": "vet", "at": 0.55},
-			{"type": "fuel", "at": 0.75},
 			{"type": "sanctuary", "at": 1.0},
 		],
-		"brief": "A long haul — two fuel stops and a vet. Keep them calm.",
+		"hook": "A long haul with a vet stop to keep the crew calm.",
+		"brief": "A long, rough road with a vet stop halfway. Pack a ramp for the tortoise and gloves for the fox, and use the vet to steady anyone who frets.",
 	},
 	{
 		"title": "Level 11 — Trailer Team",
 		"vehicle": "jeep", "deliver": ["tortoise", "goat", "parrot"],
 		"equipment": ["ramp", "leash"], "trailer": true,
 		"length": 2200.0, "rough": 1.2, "freq": 1.1, "phase": 300.0,
-		"brief": "Too much for the jeep alone — trailer up and pack the gear.",
+		"hook": "Too much for the jeep alone — trailer up and gear up.",
+		"brief": "Three won't fit the jeep alone — hitch a trailer. Ramp for the tortoise, leash for the goat, and the parrot rides along.",
 	},
 	{
 		"title": "Level 12 — Grand Convoy",
@@ -176,13 +146,12 @@ const ARCHIVED_LEVELS := [
 		"equipment": ["gloves", "ramp", "leash"], "trailer": true,
 		"length": 2900.0, "rough": 1.35, "freq": 1.05, "phase": 900.0,
 		"route": [
-			{"type": "fuel", "at": 0.28},
 			{"type": "food", "at": 0.48},
-			{"type": "fuel", "at": 0.68},
 			{"type": "vet", "at": 0.85},
 			{"type": "sanctuary", "at": 1.0},
 		],
-		"brief": "Five animals, truck and trailer, every kind of gear. The big one.",
+		"hook": "Five animals, truck and trailer — the big one.",
+		"brief": "The whole menagerie: five animals, truck and trailer, every kind of gear. A feeding stop and a vet break the long, rough haul — use them.",
 	},
 ]
 
