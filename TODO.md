@@ -301,28 +301,34 @@ Note: milestone 4 (memorable per-animal identities) is now addressed directly �
 each brief row leads with the animal's personality phrase. Human playtest still
 needed to confirm the arc reads unaided and testers can describe the animals.
 
-### 6. Make vehicle progression solve visible problems
+### 6. Make vehicle progression solve visible problems — DONE (2026-07-18)
 
-**Problem:** Vehicles are assigned by level, and the current stats do not make a
-larger vehicle a visibly gentler or more appropriate ride.
+Each vehicle now has a legible **ride** quality (`Vehicles.DATA` `ride` /
+`ride_label`) that scales how hard terrain jolts hit passengers, shown in the prep
+brief. Vehicles are also visually distinct (tuk-tuk / open-top jeep / cab-forward
+truck) so the player can tell them apart and reason about them.
 
-Player-facing vehicle qualities should be limited and legible:
+- [x] Add a meaningful ride/suspension quality that changes passenger comfort —
+      `veh_ride` scales the felt jolt in `_update_comfort`. Re-verified: it shifts
+      outcomes (bumpy tuk-tuk makes L2/L9 demand care; smooth truck earns L12's
+      calm) without breaking winnability or the key stakes.
+- [x] Make the tuk-tuk bumpy but light — ride 1.18, "bumpy"; the starter vehicle.
+- [x] Make the jeep flexible and average — ride 1.0, "steady".
+- [x] Make the truck smoother and capable of heavy/fragile loads — ride 0.78,
+      "smooth" (its cost is low agility/top-end and it's the late-game rig).
+- [~] Introduce vehicle selection only when two unlocked vehicles are both valid —
+      NOT built. Vehicles are still assigned per level. A genuine vehicle *choice*
+      needs its own level design; deferred. The ride quality + legibility is what
+      makes such a choice meaningful once added.
+- [x] Explain a new vehicle as a solution to a problem the player has already felt
+      — the hooks/briefs do this (e.g. L5 "too heavy for the jeep").
 
-- **Capacity** — what it can carry.
-- **Ride** — how strongly terrain jolts reach passengers.
-- **Agility / route suitability** — where it can travel effectively.
+**Acceptance test:** partly met — a player can now read a vehicle's ride and tell
+the three apart; the remaining piece (an actual in-level vehicle choice) is the
+one deferred sub-task. Wants a human playtest to confirm the ride reads.
 
-- [ ] Add a meaningful ride/suspension quality that changes passenger comfort.
-- [ ] Make the cargo trike bumpy but agile and suitable for light loads.
-- [ ] Make the jeep flexible and average.
-- [ ] Make the truck smoother and capable of heavy/fragile loads, but less agile
-      or otherwise costly.
-- [ ] Introduce vehicle selection only when at least two unlocked vehicles are
-      valid and produce a genuine trade-off.
-- [ ] Explain a new vehicle as a solution to a problem the player has already felt.
-
-**Acceptance test:** A player says why they chose a vehicle in terms of the load
-or route, not simply because it is the newest or biggest.
+Owner requests folded in (2026-07-18): distinct/identifiable vehicle silhouettes,
+and the trike replaced with a **tuk-tuk** — both shipped here (see below).
 
 ### 7. Make progression communicate curiosity — DONE (2026-07-18)
 
@@ -383,8 +389,8 @@ Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
       is strongest on the rougher later levels (6–12, up to rough 1.35).
 - [x] No large art pipeline — all shapes are code-drawn and deterministic.
 
-Deliberately no birds (owner parked "birds flying through the sky" under
-Explicitly not next). Verified by rendering a gentle vs a rough route.
+Update (2026-07-18): birds were added after all, at owner request — deterministic
+flocks gliding across the sky (`_draw_birds`), flapping on a free-running clock.
 
 ### 10. Restore fuel only after route choice gives it a purpose
 
@@ -419,12 +425,12 @@ to revise the build, then run the full 10-player Gate 5 test.
 Captured mid-session while thinking; not scheduled. Several reinforce open
 milestones (noted inline). Revisit after the 3–5 player test.
 
-- **Vehicles must be readily identifiable.** They currently read as too similar.
-  Distinct silhouette/colour per vehicle, the way the animals got distinct
-  silhouettes. Directly serves milestone 6 (legible vehicle qualities) — a player
-  can't reason "which vehicle for this load" if they can't tell them apart.
-- **Replace the trike with a tuk-tuk.** More characterful and instantly readable
-  as the small starter vehicle; helps the identifiability point above.
+- **Vehicles must be readily identifiable.** DONE (2026-07-18) — each vehicle now
+  has its own silhouette: tuk-tuk (canopy on posts, rounded cabin, small front
+  wheel), open-top jeep (roll bar, windshield, chunky wheels), cab-forward truck
+  (tall windowed cab, long railed bed). Distinct colours too.
+- **Replace the trike with a tuk-tuk.** DONE (2026-07-18) — the "bicycle" vehicle
+  is now the "Tuk-Tuk" (name + drawing); the id is unchanged so levels still work.
 - **Show the player as the driver.** A simple, androgynous / gender-neutral human
   character in the cab. Adds life and a point of identification; pairs with the
   barren-landscape/juiciness work (milestone 9). NOTE: a reusable gender-neutral
@@ -457,5 +463,7 @@ Do not build these until the milestone above earns them:
 - advertising, purchases, analytics, accounts, or notifications;
 - water slosh simulation;
 - free-roaming animal AI or manual capture actions;
-- birds flying through the sky during the journey;
 - multiplayer, social systems, or live events.
+
+(Note: "birds flying through the sky" moved OUT of this list — added at owner
+request 2026-07-18 as ambient sky scenery; see `_draw_birds` in main.gd.)
