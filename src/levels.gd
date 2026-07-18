@@ -58,9 +58,10 @@ const DATA := [
 			},
 			{
 				"label": "Rough shortcut",
-				"desc": "Half the distance, sharp hills, no stops. Quicker if you're deft — but a timid animal bails if you rush it.",
+				"desc": "Half the distance over sharp hills, with one feeding stop halfway. Quicker if you're deft — a timid animal bails if you rush it, but reach the feed in time and it steadies for the run home.",
 				"length": 1450.0, "rough": 1.0, "freq": 1.1, "phase": 300.0,
 				"route": [
+					{"type": "food", "at": 0.5},
 					{"type": "sanctuary", "at": 1.0},
 				],
 			},

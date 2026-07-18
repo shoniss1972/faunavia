@@ -489,7 +489,7 @@ func _draw() -> void:
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
 		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
-		_draw_marker(node["x"], style["label"], Color(style["colour"]), still_visible)
+		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible)
 	_draw_trailer()
 	_draw_vehicle()
 
