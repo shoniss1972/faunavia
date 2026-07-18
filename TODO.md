@@ -260,11 +260,14 @@ Target identities (as shipped in the brief):
 - [ ] Verify that a tester can describe at least three animals differently after a
       short session. (Needs the next human playtest.)
 
-### 5. Rebuild the test campaign around five memorable missions — DONE (2026-07-18)
+### 5. Rebuild the test campaign around five memorable missions — SUPERSEDED (2026-07-18)
 
-The active campaign (`Levels.DATA`) is now the five-mission path; the twelve are
-kept in `Levels.ARCHIVED_LEVELS` for development, not shown to testers. Star
-totals count only active levels.
+Built the five-mission path, then — at owner request the same day — reintroduced
+the full twelve-level campaign. The refined five stay as levels 1–5 unchanged;
+levels 6–12 (new pairings, the trailer, multi-animal hauls, lifeline stops, the
+grand convoy) are appended, each with a `hook`. `Levels.DATA` is the twelve-level
+campaign again and `ARCHIVED_LEVELS` is removed. Star totals count all levels
+(★ / 36). The distillation rationale below is kept for the record.
 
 1. **First Rescue** — wombat, trike; teaches the loop (gentle, 3★ easy).
 2. **Nervous Passenger** — timid rabbit, trike; reckless driving loses it (fail),
@@ -330,18 +333,27 @@ The progression loop should read as:
 > I survived this rescue → I understand how to improve it → the next rescue adds
 > an interesting wrinkle.
 
-### 8. Verify food and vet stops read as lifelines
+### 8. Verify food and vet stops read as lifelines — DONE (2026-07-18)
 
-Food and vet nodes now restore per-animal comfort, but the mechanic still needs a
-real-play read.
+Food and vet nodes restore per-animal comfort; the stops now read as felt
+lifelines both in the moment and on the result screen.
 
-- [ ] Place a food or vet stop immediately after a deliberately rough stretch in
-      the route-choice test mission.
-- [ ] Strengthen the on-pass cue: expression change, short animation, sound, or
-      clearly targeted message.
-- [ ] Make the result screen mention when a stop saved an animal from bailing.
-- [ ] Remove or redesign any route stop that players pass without noticing or
-      understanding.
+- [x] Place a food or vet stop immediately after a deliberately rough stretch in
+      the route-choice test mission — L3's rough shortcut now carries a food stop
+      at 0.5. A driver who rushes the timid rabbit into panic can reach the feed
+      in time to steady it, then ease off and still deliver it; flat-out driving
+      still bails it first, careful play never needs it. Verified by sweeping
+      careful / reactive / reckless play on the shipped route.
+- [x] Strengthen the on-pass cue — passing a stop now perks the whole crew up for
+      ~1.8s (delighted faces + a green "Phew!" shout) on top of the targeted
+      message; the food crate / vet nurse / sanctuary building make each stop
+      legible at a glance (see the visuals commit).
+- [x] Make the result screen mention when a stop saved an animal from bailing —
+      an animal a stop pulls back from the brink, if it then arrives, is credited
+      ("🥕 A rest stop steadied X just before they bolted").
+- [x] Remove or redesign any route stop that players pass without noticing or
+      understanding — stops are now real scenery (veg crate, vet nurse tending an
+      animal, sanctuary building), not bare signs.
 
 ### 9. Add scenery only where it improves readability or delight — DONE (2026-07-18)
 
@@ -403,7 +415,9 @@ milestones (noted inline). Revisit after the 3–5 player test.
   as the small starter vehicle; helps the identifiability point above.
 - **Show the player as the driver.** A simple, androgynous / gender-neutral human
   character in the cab. Adds life and a point of identification; pairs with the
-  barren-landscape/juiciness work (milestone 9).
+  barren-landscape/juiciness work (milestone 9). NOTE: a reusable gender-neutral
+  figure now exists — `_draw_person()` in main.gd, first used for the vet nurse —
+  so drawing a driver in the cab can reuse it.
 - **Terrain obstacles (e.g. rocks).** Hazards some vehicles must take with care —
   a felt difference in how each vehicle handles rough ground. Ties to milestone 6
   (a "ride/agility" difference between vehicles) and gives driving skill more to
