@@ -536,12 +536,13 @@ func _draw() -> void:
 
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
-		# The vet and sanctuary are places — they stay drawn as the vehicle passes
-		# through. Food and fuel are consumed, so once used (eaten / collected) they
-		# vanish: the crate of veg shouldn't still be full after the crew ate it.
-		var is_place: bool = node["type"] == "vet" or node["type"] == "sanctuary"
-		var still_visible: bool = is_place or not nodes_used.has(node["x"])
-		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible)
+		# The food stall, vet, and sanctuary are places — they stay as the vehicle
+		# passes through. Only a collectible fuel can vanishes once taken. The food's
+		# veg, though, is eaten: the stall stays but its carrots/lettuce are cleared
+		# once used (handled in the food draw via `used`).
+		var used: bool = nodes_used.has(node["x"])
+		var still_visible: bool = node["type"] != "fuel" or not used
+		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible, used)
 	_draw_trailer()
 	_draw_vehicle()
 
@@ -672,7 +673,7 @@ func _prop_tuft(s: float, lush: float, seed_val: int) -> void:
 		draw_circle(Vector2(0, -7.5 * s), 1.6 * s, Color("#e0c65c"))
 
 
-func _draw_marker(world_x: float, node_type: String, label_text: String, marker_color: Color, visible_marker: bool) -> void:
+func _draw_marker(world_x: float, node_type: String, label_text: String, marker_color: Color, visible_marker: bool, used := false) -> void:
 	if not visible_marker:
 		return
 	var base := _w2s(Vector2(world_x, terrain_y(world_x)))
@@ -689,7 +690,7 @@ func _draw_marker(world_x: float, node_type: String, label_text: String, marker_
 			_draw_sanctuary(font)
 		"food":
 			_draw_signpost(label_text, marker_color, font)
-			_draw_food_stall()
+			_draw_food_stall(used)
 		"vet":
 			_draw_signpost(label_text, marker_color, font)
 			_draw_vet_stop()
@@ -707,13 +708,15 @@ func _draw_signpost(label_text: String, marker_color: Color, font: Font) -> void
 	draw_string(font, Vector2(-sign_w * 0.5 + 12.0, -117), label_text, HORIZONTAL_ALIGNMENT_CENTER, sign_w - 24.0, 15, Color("#263127"))
 
 
-func _draw_food_stall() -> void:
-	# A crate of fresh veg at the foot of the FOOD sign, so the feeding stop reads
-	# as food at a glance and not just a word on a board.
+func _draw_food_stall(eaten: bool) -> void:
+	# A crate at the foot of the FOOD sign. The crate stays put; its veg is only
+	# drawn until the crew eats it (the stall isn't the meal — the veg is).
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(-32, 0), Vector2(32, 0), Vector2(26, -22), Vector2(-26, -22)]),
 		Color("#7a4a2b"))
 	draw_line(Vector2(-28, -11), Vector2(28, -11), Color("#5e3a22"), 1.5)
+	if eaten:
+		return
 	_draw_lettuce(Vector2(-16, -22))
 	_draw_lettuce(Vector2(-1, -21))
 	_draw_carrot(Vector2(14, -22))
