@@ -48,7 +48,8 @@ The player should never need the designer to explain those motivations.
 Implemented on `main`:
 
 - 12 missions with varied lengths and terrain profiles.
-- Cargo trike, jeep, truck, and trailer.
+- Tuk-tuk, jeep, and truck (distinct silhouettes + ride quality) plus a trailer,
+  each shown with the player at the wheel.
 - Six animal species with size, weight, temperament, compatibility, equipment
   requirements, distinct sprites, and three moods.
 - Level select, prep screen, stars, sequential unlocks, and saved progress.
@@ -431,11 +432,9 @@ milestones (noted inline). Revisit after the 3–5 player test.
   (tall windowed cab, long railed bed). Distinct colours too.
 - **Replace the trike with a tuk-tuk.** DONE (2026-07-18) — the "bicycle" vehicle
   is now the "Tuk-Tuk" (name + drawing); the id is unchanged so levels still work.
-- **Show the player as the driver.** A simple, androgynous / gender-neutral human
-  character in the cab. Adds life and a point of identification; pairs with the
-  barren-landscape/juiciness work (milestone 9). NOTE: a reusable gender-neutral
-  figure now exists — `_draw_person()` in main.gd, first used for the vet nurse —
-  so drawing a driver in the cab can reuse it.
+- **Show the player as the driver.** DONE (2026-07-18) — a simple gender-neutral
+  seated figure (`_draw_driver`) sits at each vehicle's controls: under the
+  tuk-tuk canopy, at the open jeep's windshield, and in the truck's cab window.
 - **Terrain obstacles (e.g. rocks).** Hazards some vehicles must take with care —
   a felt difference in how each vehicle handles rough ground. Ties to milestone 6
   (a "ride/agility" difference between vehicles) and gives driving skill more to
