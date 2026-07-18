@@ -137,6 +137,33 @@ func _build_clips() -> void:
 	_clips["load"] = _bells([330.0, 300.0], 0.26, 0.10)
 	_clips["music"] = _music_loop()
 
+	_load_overrides()
+
+
+func _load_overrides() -> void:
+	# Prefer a real audio file in res://audio/ over the procedural clip when one is
+	# present, so recorded/generated sounds (see docs/AUDIO_BRIEF.md) can be dropped
+	# in one at a time — anything missing keeps its synthesised fallback.
+	for key in _clips.keys():
+		for ext in [".ogg", ".wav"]:
+			var path := "res://audio/" + String(key) + String(ext)
+			if not ResourceLoader.exists(path):
+				continue
+			var res = load(path)
+			if res is AudioStream:
+				if key.begins_with("engine_") or key == "music":
+					_set_loop(res)
+				_clips[key] = res
+			break
+
+
+func _set_loop(res) -> void:
+	if res is AudioStreamOggVorbis:
+		res.loop = true
+	elif res is AudioStreamWAV and res.loop_mode == AudioStreamWAV.LOOP_DISABLED:
+		res.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		res.loop_end = res.data.size() / 2  # 16-bit mono frames
+
 
 func _wav(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:
 	var n := samples.size()
