@@ -441,17 +441,14 @@ func _draw() -> void:
 	var camera_x: float = clamp(vehicle_x - view_w * CAM_ANCHOR_X, 0.0, maxf(0.0, track_len + TRACK_BUFFER - view_w))
 	_cam = Vector2(camera_x, cam_y - (size.y * CAM_ANCHOR_Y) / WORLD_ZOOM)
 
-	# Sky and distant hills. The hills are a backdrop pinned near the horizon with
-	# a slow horizontal parallax, so they read as far away rather than scaling up
-	# with the zoom.
-	draw_rect(Rect2(Vector2.ZERO, size), Color("#dcefd8"))
+	# Layered backdrop: a soft sky gradient, drifting clouds, and two parallax hill
+	# bands pinned near the horizon so they read as distance rather than scaling up
+	# with the zoom. All code-drawn and deterministic — no art pipeline.
+	_draw_sky()
+	_draw_clouds(camera_x)
 	var horizon := _w2s(Vector2(0.0, cam_y)).y
-	var distant := PackedVector2Array([Vector2(0, size.y)])
-	for screen_x in range(0, int(size.x) + 20, 20):
-		var world_x := camera_x * 0.35 + float(screen_x) / WORLD_ZOOM
-		distant.append(Vector2(screen_x, horizon - 120.0 + sin(world_x * 0.004) * 60.0))
-	distant.append(Vector2(size.x, size.y))
-	draw_colored_polygon(distant, Color("#a8c99b"))
+	_draw_hills(camera_x, 0.35, horizon - 120.0, 60.0, 0.004, Color("#a8c99b"))
+	_draw_hills(camera_x, 0.60, horizon - 74.0, 44.0, 0.006, Color("#8fb082"))
 
 	# Main terrain.
 	var ground := PackedVector2Array([Vector2(0, size.y)])
@@ -461,12 +458,117 @@ func _draw() -> void:
 	ground.append(Vector2(size.x, size.y))
 	draw_colored_polygon(ground, Color("#78945e"))
 
+	# Roadside props rooted on the terrain. Their mix shifts with the track's
+	# roughness — lush and leafy on gentle routes, rocky and sparse on rough ones —
+	# so a route's character (e.g. Level 3's safe road vs shortcut) reads at a glance.
+	_draw_ground_props(camera_x, view_w)
+
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
 		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
 		_draw_marker(node["x"], style["label"], Color(style["colour"]), still_visible)
 	_draw_trailer()
 	_draw_vehicle()
+
+
+func _rand01(seed_val: int) -> float:
+	# Cheap deterministic hash → [0, 1). Stable per seed so scenery never flickers.
+	var h := sin(float(seed_val) * 12.9898) * 43758.5453
+	return h - floor(h)
+
+
+func _draw_sky() -> void:
+	var pts := PackedVector2Array([Vector2(0, 0), Vector2(size.x, 0), Vector2(size.x, size.y), Vector2(0, size.y)])
+	var top := Color("#eaf5ec")
+	var low := Color("#d3e7d6")
+	draw_polygon(pts, PackedColorArray([top, top, low, low]))
+
+
+func _cloud(center: Vector2, r: float) -> void:
+	var c := Color(1, 1, 1, 0.5)
+	draw_circle(center, r, c)
+	draw_circle(center + Vector2(r * 0.9, r * 0.25), r * 0.72, c)
+	draw_circle(center + Vector2(-r * 0.9, r * 0.28), r * 0.7, c)
+	draw_circle(center + Vector2(0, -r * 0.35), r * 0.66, c)
+
+
+func _draw_clouds(camera_x: float) -> void:
+	# A few clouds drifting slowly against the camera, wrapped across the sky.
+	var span := size.x + 240.0
+	for i in range(5):
+		var raw := float(i) * 300.0 + 90.0 - camera_x * 0.18
+		var cx := fmod(fmod(raw, span) + span, span) - 120.0
+		var cy := 46.0 + _rand01(i * 53 + 9) * 150.0
+		_cloud(Vector2(cx, cy), 18.0 + _rand01(i * 7 + 3) * 16.0)
+
+
+func _draw_hills(camera_x: float, parallax: float, y_base: float, amp: float, freq: float, colour: Color) -> void:
+	var pts := PackedVector2Array([Vector2(0, size.y)])
+	for screen_x in range(0, int(size.x) + 20, 20):
+		var wx := camera_x * parallax + float(screen_x) / WORLD_ZOOM
+		pts.append(Vector2(screen_x, y_base + sin(wx * freq) * amp))
+	pts.append(Vector2(size.x, size.y))
+	draw_colored_polygon(pts, colour)
+
+
+func _draw_ground_props(camera_x: float, view_w: float) -> void:
+	# Props sit at deterministic world positions on the terrain line and are drawn
+	# in world scale (through the zoom) so they pass by with the ground. The type
+	# mix tracks roughness: lush at gentle roughness, rocky and sparse when rough.
+	const SPACING := 55.0
+	var lush := clampf(1.0 - (track_rough - 0.5) / 0.85, 0.0, 1.0)
+	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
+	var start_i := int(floor(camera_x / SPACING)) - 1
+	var end_i := int(ceil((camera_x + view_w) / SPACING)) + 1
+	for i in range(start_i, end_i):
+		if _rand01(i * 3 + 1) > 0.5 + 0.15 * lush:
+			continue  # gaps between props, a touch denser when lush
+		var world_x := (float(i) + _rand01(i * 7 + 2)) * SPACING
+		if world_x < 60.0 or world_x > track_len + TRACK_BUFFER - 40.0:
+			continue
+		var base := _w2s(Vector2(world_x, terrain_y(world_x)))
+		if base.x < -60.0 or base.x > size.x + 60.0:
+			continue
+		draw_set_transform(base, 0.0, zoom)
+		var pick := _rand01(i * 13 + 5)
+		var scl := 0.8 + _rand01(i * 5 + 4) * 0.5
+		if pick < 0.15 + (1.0 - lush) * 0.5:
+			_prop_rock(scl)
+		elif pick < 0.55 + 0.2 * lush:
+			_prop_tree(scl)
+		elif pick < 0.85:
+			_prop_bush(scl)
+		else:
+			_prop_tuft(scl, lush, i)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _prop_tree(s: float) -> void:
+	draw_rect(Rect2(-2.0 * s, -12.0 * s, 4.0 * s, 12.0 * s), Color("#6b5540"))
+	draw_circle(Vector2(0, -16.0 * s), 9.0 * s, Color("#5f7d47"))
+	draw_circle(Vector2(-5.0 * s, -12.0 * s), 6.5 * s, Color("#688a4d"))
+	draw_circle(Vector2(5.0 * s, -12.0 * s), 6.5 * s, Color("#688a4d"))
+
+
+func _prop_bush(s: float) -> void:
+	draw_circle(Vector2(-5.0 * s, -4.0 * s), 6.5 * s, Color("#6f8a54"))
+	draw_circle(Vector2(5.0 * s, -4.0 * s), 6.5 * s, Color("#6f8a54"))
+	draw_circle(Vector2(0, -8.0 * s), 7.5 * s, Color("#77935b"))
+
+
+func _prop_rock(s: float) -> void:
+	draw_circle(Vector2(0, -4.0 * s), 6.0 * s, Color("#8f948a"))
+	draw_circle(Vector2(3.0 * s, -3.0 * s), 4.0 * s, Color("#a1a69b"))
+	draw_circle(Vector2(-4.0 * s, -2.5 * s), 3.5 * s, Color("#7f847a"))
+
+
+func _prop_tuft(s: float, lush: float, seed_val: int) -> void:
+	var blade := Color("#6d8a4e")
+	for k in range(3):
+		var bx := (float(k) - 1.0) * 3.0 * s
+		draw_line(Vector2(bx, 0), Vector2(bx - 1.5 * s, -7.0 * s), blade, 1.5)
+	if lush > 0.5 and _rand01(seed_val * 19 + 6) < 0.6:
+		draw_circle(Vector2(0, -7.5 * s), 1.6 * s, Color("#e0c65c"))
 
 
 func _draw_marker(world_x: float, label_text: String, marker_color: Color, visible_marker: bool) -> void:

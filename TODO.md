@@ -331,16 +331,25 @@ real-play read.
 - [ ] Remove or redesign any route stop that players pass without noticing or
       understanding.
 
-### 9. Add scenery only where it improves readability or delight
+### 9. Add scenery only where it improves readability or delight — DONE (2026-07-18)
 
-The close camera exposes the barren world. Add environmental character, but do
-not let scenery displace the gameplay work above.
+Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
+`_draw_ground_props` + prop helpers). No art pipeline.
 
-- [ ] Add a small reusable set of parallax features, foreground props, and roadside
-      details.
-- [ ] Give the five test missions distinct visual identities.
-- [ ] Use scenery to telegraph terrain and route character where possible.
-- [ ] Avoid a large art pipeline until the core test succeeds.
+- [x] Reusable parallax set: sky gradient, drifting clouds, a second hill band
+      behind the existing one, and deterministic roadside props (trees, bushes,
+      rocks, grass tufts) rooted on the terrain and drawn in world scale.
+- [~] Distinct visual identities: partly — the prop *mix* is driven by track
+      roughness (lush→rocky), so gentle and rough routes read differently. Per-
+      mission palettes/landmarks are still open if wanted.
+- [x] Telegraph terrain/route character: prop mix tracks `track_rough`, so Level
+      3's safe road (lush) vs rough shortcut (rockier) look different. Contrast is
+      subtle in the active campaign (roughest active track is 1.0); more pronounced
+      on the archived rough levels.
+- [x] No large art pipeline — all shapes are code-drawn and deterministic.
+
+Deliberately no birds (owner parked "birds flying through the sky" under
+Explicitly not next). Verified by rendering a gentle vs a rough route.
 
 ### 10. Restore fuel only after route choice gives it a purpose
 
@@ -363,8 +372,8 @@ The next playable build should contain only:
 2. [x] a clear result/replay/continue screen;
 3. [x] one meaningful safe-versus-rough route choice (Level 3);
 4. [x] one five-mission test path built around distinct situations;
-5. [ ] only the minimum supporting UI and scenery needed to test those changes
-   — still open (see milestone 9 scenery; landscape is barren).
+5. [x] minimum supporting scenery — a code-drawn parallax/props pass so the close
+   camera no longer shows a barren world (see milestone 9).
 
 Then test with 3–5 unfamiliar players before expanding further. Use the results
 to revise the build, then run the full 10-player Gate 5 test.
@@ -405,4 +414,5 @@ Do not build these until the milestone above earns them:
 - advertising, purchases, analytics, accounts, or notifications;
 - water slosh simulation;
 - free-roaming animal AI or manual capture actions;
+- birds flying through the sky during the journey;
 - multiplayer, social systems, or live events.
