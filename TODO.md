@@ -36,7 +36,8 @@ The player should never need the designer to explain those motivations.
 - No meter, route stop, item, screen, or stat without a visible stake.
 - Prefer one memorable rule per animal over many small numerical differences.
 - Prefer five excellent, distinct missions over twelve mechanically complete but
-  similar missions.
+  similar missions. (Owner override 2026-07-18: the full 12 are active again;
+  hold each of 6–12 to this bar — a distinct wrinkle, not just bigger numbers.)
 - Do not add economy, upgrade trees, more animals, more equipment, or more levels
   until unfamiliar players understand the loop and voluntarily retry.
 - Make consequences playful and clear: annoyance, refusal, bailing, lost stars,
@@ -59,9 +60,13 @@ Implemented on `main`:
 - Fuel exists but is disabled behind `FUEL_ENABLED` until route choice makes it
   meaningful.
 
-The key remaining weakness is not lack of functionality. It is that several
-implemented systems still do not create real choices or clearly explain why the
-player should replay or continue.
+Much of the earlier weakness is now addressed: prep is an auto-loaded brief with
+a real route choice on L3 (milestone 1/3), the result screen explains the rating
+and the fix (milestone 2), locked levels tease what's next (milestone 7), and the
+food/vet stops read as felt lifelines with real scenery (milestone 8). The main
+open gaps are vehicle differentiation (milestone 6, parked with the vehicle-art
+ideas), restoring fuel (milestone 10), and — above all — an unfamiliar-player
+phone test (Gate 5) to confirm the loop reads unaided.
 
 ## Gate 0 — Project boots
 
@@ -110,8 +115,10 @@ administrative?
 - [x] Add equipment requirements.
 - [x] Add a basic mission preparation screen.
 - [x] Build five short levels.
-- [ ] Re-answer the Gate 3 question honestly. Current answer: **no**. The screen
-      validates a predetermined manifest rather than offering a decision.
+- [x] Re-answer the Gate 3 question honestly. The confirm-the-manifest screen is
+      gone (milestone 1): prep is now an auto-loaded brief, and a real decision
+      appears only where there is a genuine trade-off (L3's route choice). A
+      deeper "arrangement puzzle" is deliberately not pursued.
 
 ## Gate 4 — Progression slice
 
@@ -153,20 +160,21 @@ The prototype earns expansion only when unfamiliar players can:
 This is the authoritative order of work. Do not skip ahead to upgrades, economy,
 more content, or broad polish.
 
-### 1. Remove fake preparation decisions
+### 1. Remove fake preparation decisions — DONE (2026-07-18)
 
-**Problem:** The prep screen currently asks the player to select every required
-animal and item. Departure is blocked until they reproduce the predetermined
-answer. That is validation, not gameplay.
+The prep screen is now an auto-loaded mission brief (`prep.gd` `_solve_loadout`):
+it lists who rides and what is packed (with a per-item reason) and goes straight
+to DEPART. The one place prep is a real decision is a level offering a route
+choice (L3), where the brief adds a route chooser.
 
-- [ ] Auto-load mission-required animals.
-- [ ] Auto-include mandatory safety/handling equipment, or treat it as an unlocked
-      capability rather than a repeated toggle.
-- [ ] Show preparation only when the player has at least two valid plans with a
-      meaningful trade-off.
-- [ ] When no real choice exists, go directly from a concise mission brief to the
+- [x] Auto-load mission-required animals.
+- [x] Auto-include mandatory safety/handling equipment — auto-packed, with the
+      brief explaining why each item rides along.
+- [x] Show preparation only when the player has at least two valid plans with a
+      meaningful trade-off — the route chooser appears only on levels with routes.
+- [x] When no real choice exists, go directly from a concise mission brief to the
       drive.
-- [ ] Remove any remaining click whose only function is to confirm the one correct
+- [x] Remove any remaining click whose only function is to confirm the one correct
       answer.
 
 Possible future **real** prep choices, to build one at a time rather than all at
@@ -181,17 +189,19 @@ once:
 **Acceptance test:** A player can explain what they chose, what they gave up, and
 why that mattered on the drive.
 
-### 2. Add a proper result and replay screen
+### 2. Add a proper result and replay screen — DONE (2026-07-18)
 
-**Problem:** The game currently records stars and returns to level select without
-clearly explaining the result, the improvement path, or the next reward.
+`result.gd` / `result.tscn` show after every rescue: the star rating in plain
+language, a roster of who arrived calm / rattled / bailed, one hint aimed at what
+actually went wrong, a next-mission teaser, and Retry / Continue actions. An
+empty arrival is a FAIL that cannot advance (retry only).
 
-- [ ] Add a result screen after each rescue.
-- [ ] Show who arrived and who bailed.
-- [ ] Explain the exact star result in plain language.
-- [ ] Give one specific improvement hint based on the run, not a generic tutorial.
-- [ ] Add clear **Retry for 3 stars** and **Continue** actions.
-- [ ] Preview the next unlock or next mission's new problem.
+- [x] Add a result screen after each rescue.
+- [x] Show who arrived and who bailed.
+- [x] Explain the exact star result in plain language.
+- [x] Give one specific improvement hint based on the run, not a generic tutorial.
+- [x] Add clear **Retry for 3 stars** and **Continue** actions.
+- [x] Preview the next unlock or next mission's new problem — uses the level hook.
 
 Example result language:
 
@@ -282,8 +292,10 @@ campaign again and `ARCHIVED_LEVELS` is removed. Star totals count all levels
 - [x] Each mission has a distinct visual/terrain identity (length/rough/freq/phase).
 - [x] Each mission ends with a reason to retry or continue — verified by driving:
       M2 reckless fails; M5 reckless 2★; the result screen names the fix.
-- [x] Cut/park missions that just repeat a manifest with larger numbers (the
-      original 12 are archived, not deleted).
+- [~] Cut/park missions that just repeat a manifest with larger numbers — briefly
+      true (the 12 were distilled to 5), then REVERSED at owner request: all 12
+      are active again as the campaign. Levels 6–12 grow the cast/gear/trailer
+      rather than only inflating numbers, and each carries a hook.
 
 Note: milestone 4 (memorable per-animal identities) is now addressed directly —
 each brief row leads with the animal's personality phrase. Human playtest still
@@ -367,9 +379,8 @@ Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
       roughness (lush→rocky), so gentle and rough routes read differently. Per-
       mission palettes/landmarks are still open if wanted.
 - [x] Telegraph terrain/route character: prop mix tracks `track_rough`, so Level
-      3's safe road (lush) vs rough shortcut (rockier) look different. Contrast is
-      subtle in the active campaign (roughest active track is 1.0); more pronounced
-      on the archived rough levels.
+      3's safe road (lush) vs rough shortcut (rockier) look different. The contrast
+      is strongest on the rougher later levels (6–12, up to rough 1.35).
 - [x] No large art pipeline — all shapes are code-drawn and deterministic.
 
 Deliberately no birds (owner parked "birds flying through the sky" under
@@ -395,7 +406,8 @@ The next playable build should contain only:
 1. [x] automatic handling of mandatory prep (auto-loaded brief);
 2. [x] a clear result/replay/continue screen;
 3. [x] one meaningful safe-versus-rough route choice (Level 3);
-4. [x] one five-mission test path built around distinct situations;
+4. [x] one five-mission test path built around distinct situations (later expanded
+   back to the full 12 at owner request — see milestone 5);
 5. [x] minimum supporting scenery — a code-drawn parallax/props pass so the close
    camera no longer shows a barren world (see milestone 9).
 
