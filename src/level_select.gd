@@ -9,6 +9,7 @@ const LOCK_GREY := Color("#8a8f84")
 
 
 func _ready() -> void:
+	Audio.start_music()
 	_build()
 
 
@@ -84,6 +85,7 @@ func _stars_str(n: int) -> String:
 
 
 func _on_level_chosen(index: int) -> void:
+	Audio.play("tap", -10.0)
 	GameState.current_level = index
 	get_tree().change_scene_to_file("res://src/prep.tscn")
 

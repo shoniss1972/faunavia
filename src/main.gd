@@ -133,6 +133,8 @@ var _critter_art := {}   # "<id>_<mood>" -> Texture2D, filled on first draw
 var cam_y := 0.0         # smoothed terrain height the camera tracks
 var _cam := Vector2.ZERO # world point at the screen's top-left, set each frame
 var anim_t := 0.0        # free-running clock for ambient motion (bird wingbeats)
+var jolt_cd := 0.0       # cooldown so one bump plays one thud, not a burst
+var warn_cd := 0.0       # cooldown for the repeating "about to jump" chirp
 var passengers: Array[String] = []
 # Per-passenger state, all parallel to `passengers` and (re)built in _reset_run.
 var comforts: Array[float] = []       # 0..100 mood
@@ -163,7 +165,12 @@ const RELIEF_TIME := 1.8        # how long the crew visibly perks up after a sto
 
 func _ready() -> void:
 	set_process(true)
+	Audio.start_music()
 	_reset_run()
+
+
+func _exit_tree() -> void:
+	Audio.stop_engine()
 
 
 func _update_camera(delta: float) -> void:
@@ -222,6 +229,7 @@ func _process(delta: float) -> void:
 
 	_update_suspension(delta)
 	_update_comfort(delta)
+	_update_audio(delta)
 
 	if FUEL_ENABLED:
 		fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
@@ -276,6 +284,28 @@ func _update_comfort(delta: float) -> void:
 			states[i] = "content"
 
 
+func _update_audio(delta: float) -> void:
+	# Runs only on the active drive (after loading, before arrival). Holds the motor
+	# under the vehicle, thuds on a real bump, and chirps a warning while a
+	# passenger is on the brink — the audible half of the comfort read.
+	jolt_cd = maxf(jolt_cd - delta, 0.0)
+	warn_cd = maxf(warn_cd - delta, 0.0)
+	Audio.engine(speed, veh_max_speed, String(vehicle_data.get("shape", "jeep")))
+
+	var jolt := absf(body_vy) * veh_ride
+	if jolt > COMFORT_JOLT_THRESHOLD + 8.0 and jolt_cd <= 0.0:
+		var strength := clampf((jolt - COMFORT_JOLT_THRESHOLD) / 60.0, 0.0, 1.0)
+		Audio.play("jolt", lerpf(-22.0, -7.0, strength), 0.9 + strength * 0.35)
+		jolt_cd = 0.18
+
+	if warn_cd <= 0.0:
+		for i in passengers.size():
+			if not bailed[i] and comforts[i] <= COMFORT_PANIC:
+				Audio.play("warn", -12.0)
+				warn_cd = 0.6
+				break
+
+
 func _bail_animal(index: int) -> void:
 	# Pushed past its limit, the animal leaps off and trots back down the road. It
 	# no longer counts as delivered; the run carries on with whoever is left.
@@ -283,6 +313,7 @@ func _bail_animal(index: int) -> void:
 	bail_t[index] = 0.0
 	comforts[index] = 0.0
 	states[index] = "annoyed"
+	Audio.play("bail", -6.0)
 	message_label.text = "%s had enough and jumped off!" % Animals.display_name(passengers[index])
 
 
@@ -304,9 +335,12 @@ func _check_route_nodes() -> void:
 			if vehicle_x >= nx and not finished:
 				finished = true
 				speed = 0.0
+				Audio.stop_engine()
 				for i in passengers.size():
 					if not bailed[i]:
 						states[i] = "delighted"
+				var delivered_ok := _active_passengers() > 0
+				Audio.play("sanctuary" if delivered_ok else "warn", -5.0)
 				var tail := "Preparing next mission..." if GameState.has_more_levels() else "That was the last rescue!"
 				var delivered := _active_passengers()
 				if delivered == 0:
@@ -328,11 +362,17 @@ func _check_route_nodes() -> void:
 				# the brink if you reach it before it bails.
 				var rescued := _restore_comfort(FOOD_COMFORT)
 				relief_t = RELIEF_TIME
+				Audio.play("munch", -8.0)
+				if rescued != "":
+					Audio.play("rescue", -6.0)
 				message_label.text = ("Fed the crew — steadied %s just in time!" % rescued) if rescued != "" else "Fed the crew — spirits lift."
 			"vet":
 				# A full reset: everyone still aboard is calmed completely.
-				_restore_comfort(COMFORT_MAX)
+				var vet_saved := _restore_comfort(COMFORT_MAX)
 				relief_t = RELIEF_TIME
+				Audio.play("vet", -7.0)
+				if vet_saved != "":
+					Audio.play("rescue", -6.0)
 				message_label.text = "Vet check — everyone's calm again."
 
 
@@ -363,6 +403,7 @@ func _update_loading(delta: float, drive_requested: bool) -> void:
 			is_loaded = true
 			for i in states.size():
 				states[i] = "content"
+			Audio.play("load", -8.0)
 			message_label.text = "%s aboard! Reach the sanctuary — mind the ride." % _crew_label().capitalize()
 	elif drive_requested:
 		loading = true

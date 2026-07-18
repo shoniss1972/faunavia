@@ -24,6 +24,18 @@ func _ready() -> void:
 	# This screen supersedes the level-select "Last rescue" toast.
 	GameState.last_earned = -1
 	_build()
+	_play_result_audio()
+
+
+func _play_result_audio() -> void:
+	var earned := int(result.get("earned", 0))
+	var failed := int(result.get("delivered", 0)) <= 0
+	Audio.play("warn" if failed else "sanctuary", -5.0)
+	# Tally the stars up, one bright ping each, rising in pitch.
+	for s in range(earned):
+		var when := 0.45 + float(s) * 0.28
+		get_tree().create_timer(when).timeout.connect(
+			func(): Audio.play("star", -6.0, 1.0 + float(s) * 0.12))
 
 
 func _make_root_column() -> VBoxContainer:
@@ -221,16 +233,19 @@ func _next_available() -> bool:
 
 
 func _on_retry() -> void:
+	Audio.play("tap", -8.0)
 	GameState.current_level = level_index
 	get_tree().change_scene_to_file("res://src/prep.tscn")
 
 
 func _on_next() -> void:
+	Audio.play("tap", -8.0)
 	GameState.current_level = level_index + 1
 	get_tree().change_scene_to_file("res://src/prep.tscn")
 
 
 func _on_levels() -> void:
+	Audio.play("tap", -8.0)
 	get_tree().change_scene_to_file("res://src/level_select.tscn")
 
 

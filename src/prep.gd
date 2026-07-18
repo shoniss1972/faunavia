@@ -149,6 +149,7 @@ func _build_route_chooser(column: Node) -> void:
 
 func _on_route_toggled(pressed: bool, index: int) -> void:
 	if pressed:
+		Audio.play("tap", -12.0)
 		chosen_route = index
 		_refresh_route_buttons()
 
@@ -205,6 +206,7 @@ func _gear_reason(eq: String) -> String:
 
 
 func _on_depart() -> void:
+	Audio.play("tap", -8.0)
 	GameState.set_loadout(animals, equipment, trailer)
 	GameState.set_route(route_options[chosen_route] if not route_options.is_empty() else {})
 	get_tree().change_scene_to_file("res://src/main.tscn")
