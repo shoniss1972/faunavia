@@ -82,7 +82,7 @@ func _build_brief() -> void:
 	var column := _make_root_column()
 	_add_label(column, level["title"], 28)
 	_add_label(column, level["brief"], 17, MUTED)
-	_add_label(column, "%s  ·  %d slots  ·  top speed %d" % [veh["name"], eff_cap, int(veh["max_speed"])], 16, MUTED)
+	_add_label(column, "%s  ·  %d slots  ·  %s ride" % [veh["name"], eff_cap, veh.get("ride_label", "steady")], 16, MUTED)
 
 	_add_label(column, "— ABOARD —", 16, MUTED)
 	for id in animals:

@@ -132,6 +132,7 @@ var body_vy := 0.0
 var _critter_art := {}   # "<id>_<mood>" -> Texture2D, filled on first draw
 var cam_y := 0.0         # smoothed terrain height the camera tracks
 var _cam := Vector2.ZERO # world point at the screen's top-left, set each frame
+var anim_t := 0.0        # free-running clock for ambient motion (bird wingbeats)
 var passengers: Array[String] = []
 # Per-passenger state, all parallel to `passengers` and (re)built in _reset_run.
 var comforts: Array[float] = []       # 0..100 mood
@@ -147,6 +148,7 @@ var veh_max_speed := 260.0
 var veh_accel := 150.0
 var veh_start_fuel := 55.0
 var veh_fuel_per_px := 0.012
+var veh_ride := 1.0                   # per-vehicle jolt multiplier (milestone 6)
 var is_loaded := false
 var loading := false
 var load_t := 0.0
@@ -174,6 +176,7 @@ func _update_camera(delta: float) -> void:
 func _process(delta: float) -> void:
 	if advancing:
 		return
+	anim_t += delta
 	_update_camera(delta)
 	if finished:
 		_update_suspension(delta)
@@ -242,7 +245,9 @@ func _update_comfort(delta: float) -> void:
 	# Each passenger reads the ride through the shared suspension: a sharp jolt
 	# drains its comfort at a rate set by temperament, calm travel lets it recover.
 	# Comfort selects the mood the animal wears, and reaching zero bails it off.
-	var jolt := absf(body_vy)
+	# The vehicle's ride quality scales how hard each jolt lands: the truck soaks
+	# bumps up (ride < 1), the trike rattles (ride > 1) — see milestone 6.
+	var jolt := absf(body_vy) * veh_ride
 	var over := jolt - COMFORT_JOLT_THRESHOLD
 	for i in passengers.size():
 		if bailed[i]:
@@ -469,6 +474,7 @@ func _draw() -> void:
 	# with the zoom. All code-drawn and deterministic — no art pipeline.
 	_draw_sky()
 	_draw_clouds(camera_x)
+	_draw_birds(camera_x)
 	var horizon := _w2s(Vector2(0.0, cam_y)).y
 	_draw_hills(camera_x, 0.35, horizon - 120.0, 60.0, 0.004, Color("#a8c99b"))
 	_draw_hills(camera_x, 0.60, horizon - 74.0, 44.0, 0.006, Color("#8fb082"))
@@ -526,6 +532,32 @@ func _draw_clouds(camera_x: float) -> void:
 		var cx := fmod(fmod(raw, span) + span, span) - 120.0
 		var cy := 46.0 + _rand01(i * 53 + 9) * 150.0
 		_cloud(Vector2(cx, cy), 18.0 + _rand01(i * 7 + 3) * 16.0)
+
+
+func _bird(center: Vector2, wing: float, col: Color) -> void:
+	# A shallow "M" — two strokes rising to a peak, the wing height animated so the
+	# bird flaps as it drifts. A small body dot at the peak anchors the shape.
+	draw_line(center + Vector2(-12.0, 0.0), center + Vector2(-2.5, -wing), col, 2.4)
+	draw_line(center + Vector2(2.5, -wing), center + Vector2(12.0, 0.0), col, 2.4)
+	draw_circle(center + Vector2(0.0, -wing + 1.0), 1.8, col)
+
+
+func _draw_birds(camera_x: float) -> void:
+	# A few small flocks gliding against the camera, wrapped across the sky.
+	# Deterministic anchors; wings flap on the free-running clock so they read as
+	# alive even when the vehicle is stopped.
+	var span := size.x + 260.0
+	var col := Color(0.20, 0.23, 0.28, 0.9)
+	# Kept in the open sky band below the status panel and above the hills.
+	var band := clampf(_w2s(Vector2(0.0, cam_y)).y - 200.0, 60.0, size.y)
+	for i in range(3):
+		var raw := float(i) * 250.0 + 120.0 - camera_x * 0.24
+		var fx := fmod(fmod(raw, span) + span, span) - 130.0
+		var fy := 176.0 + _rand01(i * 41 + 6) * band * 0.5
+		var flap := 5.5 + sin(anim_t * 5.0 + float(i) * 1.7) * 4.0
+		_bird(Vector2(fx, fy + sin(anim_t * 0.9 + i) * 3.0), flap, col)
+		_bird(Vector2(fx + 26.0, fy + 11.0 + sin(anim_t * 0.9 + i + 1.0) * 3.0), flap * 0.9, col)
+		_bird(Vector2(fx - 22.0, fy + 9.0 + sin(anim_t * 0.9 + i + 2.0) * 3.0), flap * 0.85, col)
 
 
 func _draw_hills(camera_x: float, parallax: float, y_base: float, amp: float, freq: float, colour: Color) -> void:
@@ -766,20 +798,31 @@ func _draw_vehicle() -> void:
 	var wdx: float = vehicle_data.get("wheel_dx", 30.0)
 	var body_col := Color(vehicle_data.get("colour", "#d9824b"))
 	var body_top := 4.0 - bh
+	var shape := String(vehicle_data.get("shape", "jeep"))
 
-	# Wheels stay planted on the ground and follow the slope.
+	# Wheels stay planted on the ground and follow the slope. The tuk-tuk runs a
+	# smaller front wheel, so its silhouette reads as a three-wheeler.
+	var front_wr := wr * 0.82 if shape == "tuktuk" else wr
 	draw_set_transform(_w2s(Vector2(vehicle_x, ground_y - wr * 0.7)), angle, zoom)
 	draw_circle(Vector2(-wdx, 0), wr, Color("#30352f"))
-	draw_circle(Vector2(wdx, 0), wr, Color("#30352f"))
+	draw_circle(Vector2(wdx, 0), front_wr, Color("#30352f"))
 	draw_circle(Vector2(-wdx, 0), wr * 0.44, Color("#b8b6a8"))
-	draw_circle(Vector2(wdx, 0), wr * 0.44, Color("#b8b6a8"))
+	draw_circle(Vector2(wdx, 0), front_wr * 0.44, Color("#b8b6a8"))
 
-	# Body rides on the suspension, bobbing relative to the wheels.
+	# Body rides on the suspension, bobbing relative to the wheels. The bed box is
+	# shared (passengers seat against it); each vehicle adds its own superstructure
+	# so the three read as distinct silhouettes, not one recoloured box (milestone 6
+	# / owner ideas: identifiable vehicles, tuk-tuk).
 	draw_set_transform(_w2s(Vector2(vehicle_x, body_y)), angle, zoom)
 	draw_rect(Rect2(-bw * 0.5, body_top, bw, bh), body_col, true)
-	draw_rect(Rect2(-bw * 0.23, body_top - 24.0, bw * 0.45, 25.0), Color("#f2d7a8"), true)
 	_draw_passenger(_passenger_load_offset())
-	draw_rect(Rect2(bw * CAB_X, body_top - 15.0, bw * CAB_W, bh + 6.0), Color("#596b52"), false, 5.0)
+	match shape:
+		"tuktuk":
+			_veh_tuktuk(bw, bh, body_top, body_col)
+		"truck":
+			_veh_truck(bw, bh, body_top, body_col)
+		_:
+			_veh_jeep(bw, bh, body_top, body_col)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	var over_cab := _w2s(Vector2(vehicle_x, body_y - 58.0))
@@ -787,6 +830,50 @@ func _draw_vehicle() -> void:
 		draw_string(ThemeDB.fallback_font, over_cab - Vector2(45.0, 0.0), _load_line(), HORIZONTAL_ALIGNMENT_CENTER, 90.0, 18, Color("#8a5a2b"))
 	elif is_loaded:
 		_draw_emote(over_cab.x, over_cab.y)
+
+
+func _veh_tuktuk(bw: float, bh: float, body_top: float, col: Color) -> void:
+	# A rounded driver pod at the front under a bright canopy on posts — the classic
+	# tuk-tuk look over an open rear bed where the animals ride.
+	var canopy := Color("#e0a23e")
+	# Rounded front cabin.
+	draw_rect(Rect2(bw * 0.12, body_top - 16.0, bw * 0.40, bh + 16.0), col, true)
+	draw_circle(Vector2(bw * 0.50, body_top - 4.0), bh * 0.52 + 6.0, col)
+	draw_rect(Rect2(bw * 0.20, body_top - 12.0, bw * 0.26, 13.0), Color("#bfe6df"), true)  # windshield
+	# Canopy roof and its support posts.
+	draw_line(Vector2(-bw * 0.42, body_top - 2.0), Vector2(-bw * 0.42, body_top - 22.0), col.darkened(0.2), 2.5)
+	draw_line(Vector2(bw * 0.46, body_top - 2.0), Vector2(bw * 0.46, body_top - 22.0), col.darkened(0.2), 2.5)
+	draw_rect(Rect2(-bw * 0.48, body_top - 25.0, bw * 0.98, 6.0), canopy, true)
+	draw_circle(Vector2(-bw * 0.48, body_top - 22.0), 3.0, canopy)
+	draw_circle(Vector2(bw * 0.50, body_top - 22.0), 3.0, canopy)
+	draw_circle(Vector2(bw * 0.54, body_top + bh * 0.4), 2.6, Color("#f2e28a"))  # headlight
+
+
+func _veh_jeep(bw: float, bh: float, body_top: float, col: Color) -> void:
+	# Open-topped and rugged: a raked windshield, a roll bar over the bed, chunky
+	# wheel arches, and a round headlight. No solid roof — that's the truck's cue.
+	var frame := col.darkened(0.35)
+	# Raked windshield at the front.
+	draw_line(Vector2(bw * 0.28, body_top), Vector2(bw * 0.14, body_top - 20.0), frame, 3.0)
+	draw_rect(Rect2(bw * 0.02, body_top - 20.0, bw * 0.14, 4.0), frame, true)   # visor
+	# Roll bar over the rear bed.
+	draw_line(Vector2(-bw * 0.30, body_top), Vector2(-bw * 0.30, body_top - 18.0), frame, 3.0)
+	draw_line(Vector2(-bw * 0.30, body_top - 18.0), Vector2(bw * 0.02, body_top - 18.0), frame, 3.0)
+	draw_line(Vector2(bw * 0.02, body_top - 18.0), Vector2(bw * 0.02, body_top), frame, 3.0)
+	# Wheel arches and a headlight.
+	draw_rect(Rect2(-bw * 0.5, body_top + bh * 0.55, bw, bh * 0.5), col.darkened(0.18), true)
+	draw_circle(Vector2(bw * 0.47, body_top + bh * 0.35), 3.2, Color("#f2e28a"))
+
+
+func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
+	# Cab-forward hauler: a tall boxy cab at the front with a window, a low side
+	# rail down the long cargo bed, and a front bumper — a clearly bigger rig.
+	var cab := col.darkened(0.12)
+	draw_rect(Rect2(bw * 0.18, body_top - 30.0, bw * 0.30, bh + 30.0), cab, true)   # tall cab
+	draw_rect(Rect2(bw * 0.22, body_top - 26.0, bw * 0.20, 17.0), Color("#bfe6df"), true)  # window
+	draw_rect(Rect2(-bw * 0.5, body_top - 6.0, bw * 0.64, 6.0), col.darkened(0.25), true)  # bed rail
+	draw_rect(Rect2(bw * 0.46, body_top + bh * 0.5, bw * 0.06, bh * 0.6), Color("#40352c"), true)  # bumper
+	draw_circle(Vector2(bw * 0.5, body_top + bh * 0.3), 3.0, Color("#f2e28a"))  # headlight
 
 
 func _passenger_load_offset() -> float:
@@ -1068,6 +1155,7 @@ func _reset_run() -> void:
 	veh_accel = vehicle_data["acceleration"]
 	veh_start_fuel = vehicle_data["start_fuel"]
 	veh_fuel_per_px = vehicle_data["fuel_per_px"]
+	veh_ride = vehicle_data.get("ride", 1.0)
 	vehicle_x = 100.0
 	speed = 0.0
 	fuel = veh_start_fuel
