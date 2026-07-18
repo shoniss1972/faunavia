@@ -488,7 +488,10 @@ func _draw() -> void:
 
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
-		var still_visible: bool = node["type"] == "sanctuary" or not nodes_used.has(node["x"])
+		# Stops are places, not pickups: the food stall, vet, and sanctuary stay
+		# drawn as the vehicle passes through, so they don't vanish on arrival. (A
+		# collectible fuel can is the one thing that should disappear once taken.)
+		var still_visible: bool = node["type"] != "fuel" or not nodes_used.has(node["x"])
 		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible)
 	_draw_trailer()
 	_draw_vehicle()
