@@ -523,7 +523,16 @@ func _draw() -> void:
 	# beneath it at CAM_ANCHOR_Y down. cam_y is smoothed in _process so hills pan
 	# the view rather than jerking it.
 	var view_w := size.x / WORLD_ZOOM
-	var camera_x: float = clamp(vehicle_x - view_w * CAM_ANCHOR_X, 0.0, maxf(0.0, track_len + TRACK_BUFFER - view_w))
+	# A towed trailer sits well behind a wide vehicle (the truck is 144px, so its
+	# trailer trails ~140px back), which the default anchor pushes off the left
+	# edge. When there's a trailer, pull the anchor right just far enough to frame
+	# the whole rig's rear — no more, so lookahead ahead stays as generous as it can
+	# (capped at centre, and never tighter than the default).
+	var anchor := CAM_ANCHOR_X
+	if has_trailer:
+		var need_behind: float = vehicle_data.get("body_w", 96.0) * 0.5 + 42.0 + 26.0 + 12.0
+		anchor = clampf(need_behind / view_w, CAM_ANCHOR_X, 0.5)
+	var camera_x: float = clamp(vehicle_x - view_w * anchor, 0.0, maxf(0.0, track_len + TRACK_BUFFER - view_w))
 	_cam = Vector2(camera_x, cam_y - (size.y * CAM_ANCHOR_Y) / WORLD_ZOOM)
 
 	# Layered backdrop: a soft sky gradient, drifting clouds, and two parallax hill
