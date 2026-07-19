@@ -181,7 +181,7 @@ var ever_annoyed: Array[bool] = []    # did this animal ever drop to annoyed —
 var bailed: Array[bool] = []          # has it leapt off the truck
 var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
 var talk_t: Array[float] = []         # seconds left of a mouth-flap while this animal calls out
-var vet_pause_t := 0.0                # seconds left of the full stop at a vet check
+var stop_pause_t := 0.0                # seconds left of a full stop (vet check / mid-route pickup)
 var veh_hop := 0.0                    # pixels the rig is currently lifted off the ground by a bump
 var hop_vy := 0.0                     # vertical speed of that hop
 var load_factor := 0.5
@@ -206,6 +206,7 @@ var stop_saved_idx: Array[int] = []    # passengers a stop pulled back from the 
 const FINISH_HOLD_TIME := 2.0   # seconds to celebrate arrival before moving on
 const RELIEF_TIME := 1.8        # how long the crew visibly perks up after a stop
 const VET_PAUSE := 1.6          # seconds the vehicle holds a full stop at the vet check
+const PICKUP_PAUSE := 1.4       # seconds the vehicle holds while a mid-route rescue boards
 
 
 func _ready() -> void:
@@ -251,11 +252,11 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 
-	if vet_pause_t > 0.0:
-		# Pulled up at the vet: hold a full stop for a beat while the animals are
-		# checked over, then let the player pull away again. Ignores drive input so
-		# the stop reads as deliberate, not a stall.
-		vet_pause_t = maxf(vet_pause_t - delta, 0.0)
+	if stop_pause_t > 0.0:
+		# Pulled up for a scripted beat — a vet check, or a mid-route pickup while an
+		# animal clambers aboard — then let the player pull away again. Ignores drive
+		# input so the stop reads as deliberate, not a stall.
+		stop_pause_t = maxf(stop_pause_t - delta, 0.0)
 		speed = max(speed - BRAKING * 1.6 * delta, 0.0)
 	elif driving and fuel > 0.0:
 		var accel := veh_accel * (1.0 - load_factor * ACCEL_MASS_PENALTY)
@@ -465,11 +466,54 @@ func _check_route_nodes() -> void:
 				# a real stop, not a drive-through.
 				var vet_saved := _restore_comfort(COMFORT_MAX)
 				relief_t = RELIEF_TIME
-				vet_pause_t = VET_PAUSE
+				stop_pause_t = VET_PAUSE
 				Audio.play("vet", -7.0)
 				if vet_saved != "":
 					Audio.play("rescue", -6.0)
 				message_label.text = "Vet check — hold still a moment..."
+			"pickup":
+				# A mid-route rescue: the rig pulls up and another animal clambers
+				# aboard, so the second half of the level is a different handling
+				# problem (more weight, a new temperament, maybe a new neighbour).
+				_pickup_animal(String(node.get("animal", "")))
+
+
+func _pickup_animal(animal_id: String) -> void:
+	# Add a passenger to the live crew partway through the drive. It joins the
+	# per-passenger arrays (so it gets its own comfort, mood, voice and bail), its
+	# weight now counts toward handling and fuel, and the seating re-solves to fit
+	# it (overflowing into the trailer if the vehicle is full). Levels that schedule
+	# a pickup must pack any gear it needs and leave room for it.
+	if animal_id == "" or Animals.get_data(animal_id).is_empty():
+		return
+	passengers.append(animal_id)
+	comforts.append(COMFORT_MAX)
+	states.append("delighted")
+	ever_annoyed.append(false)
+	bailed.append(false)
+	bail_t.append(0.0)
+	talk_t.append(TALK_TIME)          # it calls out as it hops up
+	_recompute_load()                 # the extra weight bites from here on
+	stop_pause_t = PICKUP_PAUSE
+	relief_t = RELIEF_TIME
+	Audio.play("rescue", -5.0)
+	Audio.voice_ambient(animal_id, -8.0, 1.02)
+	message_label.text = "%s hops aboard!" % Animals.display_name(animal_id)
+
+
+func _recompute_load() -> void:
+	# Load factor from the LIVE crew (not the prep loadout), so a mid-route pickup
+	# makes the rig visibly heavier — slower to accelerate, thirstier, sagging more.
+	# Mirrors GameState.load_factor()/total_weight() over the current passengers.
+	var w := 0.0
+	for id in passengers:
+		w += float(Animals.get_data(id).get("weight", 0.0))
+	for eq in GameState.loadout_equipment:
+		w += float(GameState.EQUIPMENT_WEIGHT.get(eq, 0.0))
+	if has_trailer:
+		w += GameState.TRAILER_WEIGHT
+	var load_ref: float = vehicle_data.get("load_ref", 42.0)
+	load_factor = clampf(w / load_ref, 0.0, 1.0)
 
 
 func _restore_comfort(amount: float) -> String:
@@ -1593,7 +1637,11 @@ func _reset_run() -> void:
 	for node in track_src.get("route", _default_route(track_len)):
 		if not FUEL_ENABLED and node["type"] == "fuel":
 			continue
-		route.append({"type": node["type"], "x": float(node["at"]) * track_len})
+		# Keep every field (a pickup carries its "animal", future events their own
+		# data); just resolve the fractional "at" into a world x for this length.
+		var n: Dictionary = (node as Dictionary).duplicate()
+		n["x"] = float(node["at"]) * track_len
+		route.append(n)
 	nodes_used = {}
 
 	passengers = GameState.loadout_animals.duplicate()
@@ -1634,7 +1682,7 @@ func _reset_run() -> void:
 	finish_hold = 0.0
 	advancing = false
 	relief_t = 0.0
-	vet_pause_t = 0.0
+	stop_pause_t = 0.0
 	veh_hop = 0.0
 	hop_vy = 0.0
 	stop_saved_idx.clear()
