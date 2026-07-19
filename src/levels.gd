@@ -29,21 +29,21 @@ const DATA := [
 	{
 		"title": "Level 1 — First Rescue",
 		"vehicle": "bicycle", "deliver": ["wombat"], "equipment": [],
-		"length": 1500.0, "rough": 0.5, "freq": 1.0, "phase": 0.0,
+		"length": 3000, "rough": 0.5, "freq": 1.0, "phase": 0.0,
 		"hook": "Learn the ropes with a placid wombat.",
 		"brief": "Meet the wombat — placid and unbothered. Coax it aboard the cargo trike and roll gently to the sanctuary.",
 	},
 	{
 		"title": "Level 2 — Nervous Passenger",
 		"vehicle": "bicycle", "deliver": ["rabbit"], "equipment": [],
-		"length": 1700.0, "rough": 0.85, "freq": 1.05, "phase": 300.0,
+		"length": 3400, "rough": 1.1, "freq": 1.05, "phase": 300.0,
 		"hook": "A timid rabbit that bolts on rough ground.",
 		"brief": "The rabbit is timid — every jolt frightens it. Take the bumps slowly, or it may lose its nerve and leap off before you arrive.",
 	},
 	{
 		"title": "Level 3 — Which Road?",
 		"vehicle": "jeep", "deliver": ["wombat", "rabbit"], "equipment": [],
-		"length": 1900.0, "rough": 0.8, "freq": 1.05, "phase": 120.0,
+		"length": 3800, "rough": 0.8, "freq": 1.05, "phase": 120.0,
 		"hook": "Your first real choice: safe road or rough shortcut.",
 		"brief": "Two roads to the sanctuary. The rabbit is timid — pick the route that suits your passengers.",
 		# A real choice: the gentle road is slow but kind and has a feeding stop;
@@ -53,7 +53,7 @@ const DATA := [
 			{
 				"label": "Safe road",
 				"desc": "Longer but forgiving — an early feeding stop keeps nervous animals aboard. Drive it smoothly for all three stars.",
-				"length": 2400.0, "rough": 0.6, "freq": 1.0, "phase": 120.0,
+				"length": 4800, "rough": 0.6, "freq": 1.0, "phase": 120.0,
 				"route": [
 					{"type": "food", "at": 0.3},
 					{"type": "sanctuary", "at": 1.0},
@@ -62,7 +62,7 @@ const DATA := [
 			{
 				"label": "Rough shortcut",
 				"desc": "Half the distance over sharp hills, with one feeding stop halfway. Quicker if you're deft — a timid animal bails if you rush it, but reach the feed in time and it steadies for the run home.",
-				"length": 1450.0, "rough": 1.0, "freq": 1.1, "phase": 300.0,
+				"length": 2900, "rough": 1.25, "freq": 1.1, "phase": 300.0,
 				"route": [
 					{"type": "food", "at": 0.5},
 					{"type": "sanctuary", "at": 1.0},
@@ -74,14 +74,14 @@ const DATA := [
 		"title": "Level 4 — Awkward Companions",
 		"vehicle": "jeep", "deliver": ["fox", "rabbit"],
 		"equipment": ["divided_cage", "gloves"],
-		"length": 1950.0, "rough": 0.85, "freq": 0.95, "phase": 500.0,
+		"length": 3900, "rough": 0.85, "freq": 0.95, "phase": 500.0,
 		"hook": "A fox and rabbit who can't share a cage.",
 		"brief": "The fox eyes the rabbit like lunch. A divided cage keeps the peace — and the sly fox needs gloves before you handle it.",
 	},
 	{
 		"title": "Level 5 — Heavy Rescue",
 		"vehicle": "truck", "deliver": ["tortoise", "wombat"], "equipment": ["ramp"],
-		"length": 2600.0, "rough": 1.0, "freq": 0.95, "phase": 700.0,
+		"length": 5200, "rough": 1.0, "freq": 0.95, "phase": 700.0,
 		"route": [
 			{"type": "vet", "at": 0.5},
 			{"type": "sanctuary", "at": 1.0},
@@ -92,7 +92,7 @@ const DATA := [
 	{
 		"title": "Level 6 — Odd Couple",
 		"vehicle": "jeep", "deliver": ["goat", "parrot"], "equipment": ["leash"],
-		"length": 2000.0, "rough": 1.0, "freq": 1.15, "phase": 250.0,
+		"length": 4000, "rough": 1.0, "freq": 1.15, "phase": 250.0,
 		"hook": "A stubborn goat and a chattering parrot share the jeep.",
 		"brief": "The goat wanders off without a leash. The parrot just tags along — loud, but no trouble.",
 	},
@@ -100,7 +100,7 @@ const DATA := [
 		"title": "Level 7 — Loud and Timid",
 		"vehicle": "jeep", "deliver": ["parrot", "rabbit"],
 		"equipment": ["divided_cage"],
-		"length": 1900.0, "rough": 1.1, "freq": 1.0, "phase": 640.0,
+		"length": 3800, "rough": 1.0, "freq": 1.0, "phase": 640.0,
 		"hook": "A loud parrot rattling a timid rabbit — keep them apart.",
 		"brief": "The parrot's racket frightens the timid rabbit. A divided cage keeps the noise on its own side.",
 	},
@@ -108,7 +108,7 @@ const DATA := [
 		"title": "Level 8 — Mixed Cargo",
 		"vehicle": "truck", "deliver": ["wombat", "goat", "fox"],
 		"equipment": ["gloves", "leash"],
-		"length": 2300.0, "rough": 1.0, "freq": 0.9, "phase": 400.0,
+		"length": 4600, "rough": 1.0, "freq": 0.9, "phase": 400.0,
 		"hook": "Three aboard the truck, two of them needing gear.",
 		"brief": "Three passengers on the truck: the sly fox needs gloves, the goat needs a leash, and the wombat rides easy.",
 	},
@@ -116,7 +116,7 @@ const DATA := [
 		"title": "Level 9 — Trike Overflow",
 		"vehicle": "bicycle", "deliver": ["wombat", "goat"],
 		"equipment": ["leash"], "trailer": true,
-		"length": 2100.0, "rough": 1.25, "freq": 1.2, "phase": 150.0,
+		"length": 4200, "rough": 1.25, "freq": 1.2, "phase": 150.0,
 		"hook": "Too many for the trike — hitch a trailer.",
 		"brief": "The wombat and goat won't fit on the trike alone. Hitch a trailer for the overflow, and leash the goat.",
 	},
@@ -124,7 +124,7 @@ const DATA := [
 		"title": "Level 10 — The Long Haul",
 		"vehicle": "truck", "deliver": ["tortoise", "wombat", "fox"],
 		"equipment": ["ramp", "gloves"],
-		"length": 2700.0, "rough": 1.0, "freq": 0.95, "phase": 700.0,
+		"length": 5400, "rough": 1.0, "freq": 0.95, "phase": 700.0,
 		"route": [
 			{"type": "vet", "at": 0.55},
 			{"type": "sanctuary", "at": 1.0},
@@ -136,7 +136,7 @@ const DATA := [
 		"title": "Level 11 — Trailer Team",
 		"vehicle": "jeep", "deliver": ["tortoise", "goat", "parrot"],
 		"equipment": ["ramp", "leash"], "trailer": true,
-		"length": 2200.0, "rough": 1.2, "freq": 1.1, "phase": 300.0,
+		"length": 4400, "rough": 1.2, "freq": 1.1, "phase": 300.0,
 		"hook": "Too much for the jeep alone — trailer up and gear up.",
 		"brief": "Three won't fit the jeep alone — hitch a trailer. Ramp for the tortoise, leash for the goat, and the parrot rides along.",
 	},
@@ -144,7 +144,7 @@ const DATA := [
 		"title": "Level 12 — Grand Convoy",
 		"vehicle": "truck", "deliver": ["wombat", "fox", "tortoise", "goat", "parrot"],
 		"equipment": ["gloves", "ramp", "leash"], "trailer": true,
-		"length": 2900.0, "rough": 1.35, "freq": 1.05, "phase": 900.0,
+		"length": 5800, "rough": 1.35, "freq": 1.05, "phase": 900.0,
 		"route": [
 			{"type": "food", "at": 0.48},
 			{"type": "vet", "at": 0.85},

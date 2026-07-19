@@ -493,9 +493,20 @@ func _update_suspension(delta: float) -> void:
 func terrain_y(world_x: float) -> float:
 	# Per-level track: rough scales hill height, freq scales hill spacing, and
 	# phase shifts where the hills fall, so each level reads as its own route.
+	#
+	# Long levels need variety, or one repeating hill reads as monotony. Three
+	# layers give that without a level editor:
+	#   roll — big, slow, gentle landscape swells (a sense of travel; barely bumpy)
+	#   env  — a slow envelope on the bumpiness, so roughness ebbs and flows into
+	#          calm passages and rough ridges instead of a uniform buzz
+	#   bumps — three incommensurate ripples so the pattern doesn't obviously loop
 	var t := world_x + track_phase
-	return 790.0 + sin(t * 0.007 * track_freq) * 75.0 * track_rough \
-		+ sin(t * 0.018 * track_freq) * 28.0 * track_rough
+	var roll := sin(t * 0.0013) * 55.0 + sin(t * 0.00061 + 1.7) * 34.0
+	var env := 0.78 + 0.32 * sin(t * 0.00089 + track_phase * 0.01)
+	var bumps := (sin(t * 0.007 * track_freq) * 72.0 \
+		+ sin(t * 0.018 * track_freq) * 27.0 \
+		+ sin(t * 0.011 * track_freq + 2.1) * 21.0) * track_rough * env
+	return 790.0 + roll + bumps
 
 
 func _w2s(world: Vector2) -> Vector2:
