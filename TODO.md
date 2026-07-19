@@ -47,10 +47,17 @@ The player should never need the designer to explain those motivations.
 
 Implemented on `main`:
 
-- 12 missions, each a substantial drive (lengths doubled 2026-07-18). Terrain
-  varies *within* a level — a slow rolling landscape plus a roughness envelope
-  (calm valleys, rough ridges) — so long levels don't repeat one hill. Rebalanced
-  so careful play delivers everyone and reckless still loses the nervous loads.
+- 12 missions, each a long drive (lengths doubled 2026-07-18, then doubled AGAIN
+  2026-07-19 at owner request — now ~6000–11600px). Terrain varies *within* a
+  level — a slow rolling landscape plus a roughness envelope (calm valleys, rough
+  ridges, keyed to absolute distance so it recurs ~every 7000px) — so long levels
+  don't repeat one hill and a longer haul meets more rough ridges. Route stops now
+  SCALE with length: levels without a bespoke route get pumps every ≤2100px and a
+  feeding stop every ≤3600px (`_default_route`), so a doubled level gains more
+  pumps/feeds rather than one lonely stop. Re-validated headless: careful play
+  (≤85px/s) delivers everyone (L2's timid rabbit needs a genuine ease to ~55 over
+  its second-half ridge — its designed lesson); a sensible pace finishes with
+  20–82% fuel reserve; flooring runs dry on the long/heavy hauls.
 - Tuk-tuk, jeep, and truck (distinct silhouettes + ride quality) plus a trailer,
   each shown with the player at the wheel.
 - Six animal species with size, weight, temperament, compatibility, equipment

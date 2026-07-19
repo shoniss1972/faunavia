@@ -51,14 +51,9 @@ const CRITTER_ART := {
 	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
 }
 
-# Route stops as fractions of the track length, so they scale with each level's
-# length. Levels may override with their own list. Default: a fuel stop, a food
-# store, and the sanctuary finish.
-const DEFAULT_ROUTE := [
-	{"type": "fuel", "at": 0.45},
-	{"type": "food", "at": 0.70},
-	{"type": "sanctuary", "at": 1.0},
-]
+# Levels without a bespoke route get a length-scaled default (pumps spaced to the
+# tank's range, a feeding stop, the sanctuary) built at run start — see
+# _default_route. Bespoke routes live in each level's own "route" list.
 const NODE_STYLE := {
 	"fuel": {"label": "FUEL", "colour": "#efb64d"},
 	"food": {"label": "FOOD", "colour": "#c98a3a"},
@@ -112,6 +107,14 @@ const FUEL_MASS_PENALTY := 2.4     # multiplies fuel burn per pixel at load 1.0
 # at a crawl. This makes flooring it a real range gamble — you may not reach the
 # next pump — on top of its comfort cost, so a steady pace is rewarded twice.
 const FUEL_SPEED_PENALTY := 1.7
+# Max world px between pumps on an auto-routed level. A full tank comfortably clears
+# this at a sensible pace but not flat-out, so longer levels automatically gain more
+# pumps (see _default_route) as lengths grow, and the range gamble scales with them.
+const FUEL_PUMP_SPACING := 2100.0
+# Max world px of rough road before an auto-routed level offers a feeding stop, so
+# comfort relief scales with length the way pumps do — a doubled level gets more
+# feeds rather than one lonely stop a fragile load can't reach in time.
+const FOOD_RELIEF_SPACING := 3600.0
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
 const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
@@ -1530,6 +1533,24 @@ func _on_brake_up() -> void:
 	brake_pressed = false
 
 
+func _default_route(length: float) -> Array:
+	# Levels without a bespoke route get pumps spaced to the tank's range — so a
+	# longer haul automatically gains more pumps rather than one lonely pump left
+	# behind by the doubled lengths — plus one feeding stop and the sanctuary.
+	# Bespoke routes (vet stops, the L3 choice) set their own list in the data.
+	var nodes: Array = []
+	var segments := int(ceil(length / FUEL_PUMP_SPACING))
+	for i in range(1, segments):
+		nodes.append({"type": "fuel", "at": float(i) / float(segments)})
+	# Feeding stops on the same principle, spaced wider — at least one interior stop,
+	# more on longer hauls, so no fragile load faces too long a stretch without relief.
+	var food_segments := maxi(2, int(ceil(length / FOOD_RELIEF_SPACING)))
+	for i in range(1, food_segments):
+		nodes.append({"type": "food", "at": float(i) / float(food_segments)})
+	nodes.append({"type": "sanctuary", "at": 1.0})
+	return nodes
+
+
 func _reset_run() -> void:
 	var lvl: Dictionary = Levels.get_level(GameState.current_level)
 	# On a level that offered a route choice, the picked route carries its own
@@ -1540,7 +1561,7 @@ func _reset_run() -> void:
 	track_phase = track_src.get("phase", 0.0)
 	track_freq = track_src.get("freq", 1.0)
 	route = []
-	for node in track_src.get("route", DEFAULT_ROUTE):
+	for node in track_src.get("route", _default_route(track_len)):
 		if not FUEL_ENABLED and node["type"] == "fuel":
 			continue
 		route.append({"type": node["type"], "x": float(node["at"]) * track_len})
