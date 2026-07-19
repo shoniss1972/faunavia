@@ -1498,10 +1498,17 @@ func _draw_seat(center: Vector2, radius: float, index: int) -> void:
 	# no draw_set_transform here, which would overwrite that transform.)
 	var mood: String = states[index]
 	if not bailed[index]:
-		# While it's calling out, flap the mouth: the "delighted" sprite is the
-		# open-mouth frame, alternated with its real mood so the mouth reads as moving.
-		if talk_t[index] > 0.0 and mood != "delighted" and int(talk_t[index] / TALK_FLAP) % 2 == 0:
-			mood = "delighted"
+		# While it's calling out, flap the mouth open and closed. The "delighted"
+		# sprite is the only open-mouth frame, so we alternate it with a closed-mouth
+		# frame every TALK_FLAP. This has to work for every mood — including an animal
+		# that's *already* delighted while cruising, otherwise its mouth never moves:
+		#   open beat  -> delighted (mouth open)
+		#   closed beat -> the base mood, or "content" when the base is itself delighted
+		if talk_t[index] > 0.0:
+			if int(talk_t[index] / TALK_FLAP) % 2 == 0:
+				mood = "delighted"
+			elif mood == "delighted":
+				mood = "content"
 		_draw_critter(center, radius, passengers[index], mood, 1.0)
 		return
 	var t := bail_t[index]
