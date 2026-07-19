@@ -84,6 +84,16 @@ const MAX_HEAD := 11.0             # nor grow one past this — else a big, near
 const SUSPENSION_STIFFNESS := 90.0
 const SUSPENSION_DAMPING := 11.0
 
+# Hitting a bump hard throws the whole rig off the ground for a beat — a visible
+# hop whose size grows with how hard the jolt landed (i.e. how fast you took it),
+# and reads bigger on rough ground. It's the visible half of a rough ride: the
+# felt consequence (a rattled, bailing crew) stays with the comfort model, which
+# is rate-based and tuned per level, so the hop never double-punishes rough roads.
+const HOP_JOLT_THRESHOLD := 90.0   # |body_vy|*ride above this launches a hop
+const HOP_KICK := 1.6              # upward launch speed per unit of jolt over the threshold
+const HOP_MAX_VY := 150.0          # cap on launch speed, so a huge jolt still hops sanely
+const HOP_GRAVITY := 950.0         # pulls the hop back down to the ground
+
 # The passengers ride from the prepared loadout. Their combined weight, as a
 # 0..1 load factor from GameState, feeds handling, fuel use, and suspension sag
 # so the cargo is felt, not just labelled.
@@ -155,6 +165,8 @@ var bailed: Array[bool] = []          # has it leapt off the truck
 var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
 var talk_t: Array[float] = []         # seconds left of a mouth-flap while this animal calls out
 var vet_pause_t := 0.0                # seconds left of the full stop at a vet check
+var veh_hop := 0.0                    # pixels the rig is currently lifted off the ground by a bump
+var hop_vy := 0.0                     # vertical speed of that hop
 var load_factor := 0.5
 var has_cage := false
 var has_leash := false
@@ -256,6 +268,7 @@ func _process(delta: float) -> void:
 		relief_t = max(relief_t - delta, 0.0)
 
 	_update_suspension(delta)
+	_update_hop(delta)
 	_update_comfort(delta)
 	_update_audio(delta)
 
@@ -535,6 +548,21 @@ func _update_suspension(delta: float) -> void:
 	body_vy += accel * delta
 	body_y += body_vy * delta
 	body_y = clamp(body_y, terrain_y(vehicle_x) - 45.0, terrain_y(vehicle_x) - 8.0)
+
+
+func _update_hop(delta: float) -> void:
+	# A hard jolt launches the whole rig off the ground for a beat — a visible hop
+	# that grows with how hard the bump landed (i.e. how fast you took it), and reads
+	# bigger on rough ground. Purely visual: the fall-out consequence of a rough ride
+	# stays with the comfort model (which drains and bails, tuned per level), so this
+	# never double-punishes an inherently rough road.
+	var jolt := absf(body_vy) * veh_ride
+	if jolt > HOP_JOLT_THRESHOLD and veh_hop <= 0.5 and hop_vy <= 0.0:
+		hop_vy = minf((jolt - HOP_JOLT_THRESHOLD) * HOP_KICK, HOP_MAX_VY)
+	hop_vy -= HOP_GRAVITY * delta
+	veh_hop = maxf(veh_hop + hop_vy * delta, 0.0)
+	if veh_hop <= 0.0 and hop_vy < 0.0:
+		hop_vy = 0.0   # landed
 
 
 func terrain_y(world_x: float) -> float:
@@ -979,14 +1007,18 @@ func _draw_trailer() -> void:
 	var angle := atan2(slope, 32.0)
 	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
 
+	# The rig catches air as one, so the trailer lifts with the vehicle's hop and
+	# the hitch stays connected rather than stretching.
+	var hop := veh_hop
+
 	# A short hitch bar from the trailer up to the vehicle's rear.
-	draw_line(_w2s(Vector2(tx_world + 26.0, ground - 16.0)), _w2s(Vector2(vehicle_x - bw * 0.5, body_y - 6.0)), Color("#4a4f45"), 3.0 * WORLD_ZOOM)
+	draw_line(_w2s(Vector2(tx_world + 26.0, ground - 16.0 - hop)), _w2s(Vector2(vehicle_x - bw * 0.5, body_y - 6.0 - hop)), Color("#4a4f45"), 3.0 * WORLD_ZOOM)
 
 	# Wheel on the ground, box riding above it.
-	draw_set_transform(_w2s(Vector2(tx_world, ground - 10.0)), angle, zoom)
+	draw_set_transform(_w2s(Vector2(tx_world, ground - 10.0 - hop)), angle, zoom)
 	draw_circle(Vector2(0, 0), 12, Color("#30352f"))
 	draw_circle(Vector2(0, 0), 5, Color("#b8b6a8"))
-	draw_set_transform(_w2s(Vector2(tx_world, ground - 24.0)), angle, zoom)
+	draw_set_transform(_w2s(Vector2(tx_world, ground - 24.0 - hop)), angle, zoom)
 	draw_rect(Rect2(-26, -22, 52, 26), Color("#9a8b76"), true)
 
 	# Overflow passengers ride here, seated on the box rim so their heads poke up
@@ -1032,10 +1064,11 @@ func _draw_vehicle() -> void:
 	var body_top := 4.0 - bh
 	var shape := String(vehicle_data.get("shape", "jeep"))
 
-	# Wheels stay planted on the ground and follow the slope. The tuk-tuk runs a
-	# smaller front wheel, so its silhouette reads as a three-wheeler.
+	# Wheels ride the ground and follow the slope, but a hard bump lifts the whole
+	# rig (veh_hop) so it catches air for a beat. The tuk-tuk runs a smaller front
+	# wheel, so its silhouette reads as a three-wheeler.
 	var front_wr := wr * 0.82 if shape == "tuktuk" else wr
-	draw_set_transform(_w2s(Vector2(vehicle_x, ground_y - wr * 0.7)), angle, zoom)
+	draw_set_transform(_w2s(Vector2(vehicle_x, ground_y - wr * 0.7 - veh_hop)), angle, zoom)
 	draw_circle(Vector2(-wdx, 0), wr, Color("#30352f"))
 	draw_circle(Vector2(wdx, 0), front_wr, Color("#30352f"))
 	draw_circle(Vector2(-wdx, 0), wr * 0.44, Color("#b8b6a8"))
@@ -1045,7 +1078,7 @@ func _draw_vehicle() -> void:
 	# shared (passengers seat against it); each vehicle adds its own superstructure
 	# so the three read as distinct silhouettes, not one recoloured box (milestone 6
 	# / owner ideas: identifiable vehicles, tuk-tuk).
-	draw_set_transform(_w2s(Vector2(vehicle_x, body_y)), angle, zoom)
+	draw_set_transform(_w2s(Vector2(vehicle_x, body_y - veh_hop)), angle, zoom)
 	draw_rect(Rect2(-bw * 0.5, body_top, bw, bh), body_col, true)
 	# Any frame that arches over the open bed (canopy, roll bar) is drawn BEHIND the
 	# crew so it never crosses a passenger's face; the cab and front furniture are
@@ -1065,7 +1098,7 @@ func _draw_vehicle() -> void:
 			_veh_jeep_front(bw, bh, body_top, body_col)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	var over_cab := _w2s(Vector2(vehicle_x, body_y - 58.0))
+	var over_cab := _w2s(Vector2(vehicle_x, body_y - 58.0 - veh_hop))
 	if loading:
 		draw_string(ThemeDB.fallback_font, over_cab - Vector2(45.0, 0.0), _load_line(), HORIZONTAL_ALIGNMENT_CENTER, 90.0, 18, Color("#8a5a2b"))
 	elif is_loaded:
@@ -1487,6 +1520,8 @@ func _reset_run() -> void:
 	advancing = false
 	relief_t = 0.0
 	vet_pause_t = 0.0
+	veh_hop = 0.0
+	hop_vy = 0.0
 	stop_saved_idx.clear()
 	voice_cd = randf_range(3.0, 5.0)   # first ambient call a few seconds into the drive
 	drive_pressed = false
