@@ -47,7 +47,10 @@ The player should never need the designer to explain those motivations.
 
 Implemented on `main`:
 
-- 12 missions with varied lengths and terrain profiles.
+- 12 missions, each a substantial drive (lengths doubled 2026-07-18). Terrain
+  varies *within* a level — a slow rolling landscape plus a roughness envelope
+  (calm valleys, rough ridges) — so long levels don't repeat one hill. Rebalanced
+  so careful play delivers everyone and reckless still loses the nervous loads.
 - Tuk-tuk, jeep, and truck (distinct silhouettes + ride quality) plus a trailer,
   each shown with the player at the wheel.
 - Six animal species with size, weight, temperament, compatibility, equipment
