@@ -206,6 +206,13 @@ func _set_loop(res: AudioStream) -> void:
 		res.loop_end = int(res.get_length() * float(res.mix_rate))
 
 
+# Per-animal trim (dB) to even out the supplied voice recordings — some came in
+# quieter than others (the tortoise reads much softer than the wombat).
+const VOICE_GAIN := {
+	"tortoise": 6.0,
+}
+
+
 func voice_ambient(animal_id: String, volume_db := -10.0, pitch := 1.0) -> bool:
 	# A one-at-a-time ambient call on a dedicated channel: plays the animal's voice,
 	# but only if no ambient voice is already sounding — so the crew never talk over
@@ -214,7 +221,7 @@ func voice_ambient(animal_id: String, volume_db := -10.0, pitch := 1.0) -> bool:
 	if not _voices.has(animal_id) or _voice_amb == null or _voice_amb.playing:
 		return false
 	_voice_amb.stream = _voices[animal_id]
-	_voice_amb.volume_db = volume_db
+	_voice_amb.volume_db = volume_db + VOICE_GAIN.get(animal_id, 0.0)
 	_voice_amb.pitch_scale = pitch
 	_voice_amb.play()
 	return true
@@ -225,7 +232,7 @@ func play_voice(animal_id: String, volume_db := -8.0, pitch := 1.0) -> void:
 		var p := _sfx[_sfx_next]
 		_sfx_next = (_sfx_next + 1) % _sfx.size()
 		p.stream = _voices[animal_id]
-		p.volume_db = volume_db
+		p.volume_db = volume_db + VOICE_GAIN.get(animal_id, 0.0)
 		p.pitch_scale = pitch
 		p.play()
 
