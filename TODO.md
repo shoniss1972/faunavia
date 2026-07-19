@@ -1,493 +1,478 @@
 # Faunavia Prototype TODO
 
-## Product direction — current truth (2026-07-18)
+## Product direction — current truth (2026-07-19)
 
-Faunavia is now a functioning vertical-slice prototype. The next phase is **not**
-to add more systems or content. It is to prove that the existing idea is
-interesting, understandable, replayable, and worth continuing.
+Faunavia / **Wildlife Rescue** is a functioning mobile-first vertical slice. The
+next phase is an **approved campaign expansion**: a longer, more international game
+whose animals feel like characters rather than cargo.
 
-### Core player promise
+> **Choose a sensible rescue plan, then drive well enough that every opinionated
+> animal stays aboard.**
 
-> **Choose a sensible rescue plan, then drive well enough that every
-> opinionated animal stays aboard.**
-
-Every feature must strengthen at least one of these four things:
+Every addition must strengthen at least one of:
 
 1. **Plan** — make a real choice before or during the rescue.
-2. **Drive** — read the terrain and control the vehicle with intent.
-3. **Animals** — understand and care about distinct passengers.
-4. **Reward** — know what happened, why it mattered, and what comes next.
+2. **Drive** — read terrain and control the vehicle with intent.
+3. **Animals** — understand, remember and care about distinct passengers.
+4. **Reward** — know what happened, why it mattered and what comes next.
+5. **World** — make each rescue feel like a place and a small story.
 
-Anything that does not serve one of those should be removed, automated, or
-deferred.
+No meter, stop, item, screen, trait or animation without a visible player-facing
+job. Expansion is approved, but “more” is not enough: each animal and mission must
+add a genuinely different wrinkle.
 
-### The three motivations the game must communicate
-
-- **During the drive:** Can I keep everyone aboard?
-- **At the result:** Can I improve this rescue and earn the missing star?
-- **Across the campaign:** What new animal, route, or vehicle problem comes next?
-
-The player should never need the designer to explain those motivations.
-
-### Design rules for the next build
-
-- **Never ask the player to click the only correct answer.**
-- Do not keep a mechanic merely because it has already been implemented.
-- No meter, route stop, item, screen, or stat without a visible stake.
-- Prefer one memorable rule per animal over many small numerical differences.
-- Prefer five excellent, distinct missions over twelve mechanically complete but
-  similar missions. (Owner override 2026-07-18: the full 12 are active again;
-  hold each of 6–12 to this bar — a distinct wrinkle, not just bigger numbers.)
-- Do not add economy, upgrade trees, more animals, more equipment, or more levels
-  until unfamiliar players understand the loop and voluntarily retry.
-- Make consequences playful and clear: annoyance, refusal, bailing, lost stars,
-  and missed opportunities — never injury or distress.
+---
 
 ## Current prototype state
 
 Implemented on `main`:
 
-- 12 missions, each a long drive (lengths doubled 2026-07-18, then doubled AGAIN
-  2026-07-19 at owner request — now ~6000–11600px). Terrain varies *within* a
-  level — a slow rolling landscape plus a roughness envelope (calm valleys, rough
-  ridges, keyed to absolute distance so it recurs ~every 7000px) — so long levels
-  don't repeat one hill and a longer haul meets more rough ridges. Route stops now
-  SCALE with length: levels without a bespoke route get pumps every ≤2100px and a
-  feeding stop every ≤3600px (`_default_route`), so a doubled level gains more
-  pumps/feeds rather than one lonely stop. Re-validated headless: careful play
-  (≤85px/s) delivers everyone (L2's timid rabbit needs a genuine ease to ~55 over
-  its second-half ridge — its designed lesson); a sensible pace finishes with
-  20–82% fuel reserve; flooring runs dry on the long/heavy hauls.
-- Tuk-tuk, jeep, and truck (distinct silhouettes + ride quality) plus a trailer,
-  each shown with the player at the wheel.
-- Six animal species with size, weight, temperament, compatibility, equipment
-  requirements, distinct sprites, and three moods.
-- Level select, prep screen, stars, sequential unlocks, and saved progress.
-- Keyboard and touch controls, portrait mobile layout, and HTML5 export.
-- Per-animal comfort keyed to temperament.
-- Rough driving can make an animal bail at zero comfort; the run continues but
-  loses delivery credit and stars.
-- Food and vet route nodes restore comfort.
-- Procedural audio (no sound files): a speed-tracked engine loop per vehicle,
-  comfort cues (jolt thud, "about to jump" chirp, a bail hop), lifeline stings
-  (munch / vet chime / rescue fanfare / sanctuary chord), UI taps, a result-star
-  tally, a soft music bed, and a floating mute toggle. See `src/audio.gd`.
-- Fuel is a working range meter (`FUEL_ENABLED = true`): distance and load burn it,
-  route stops refuel, and fuel stops show jerry cans that vanish when collected.
-
-Much of the earlier weakness is now addressed: prep is an auto-loaded brief with
-a real route choice on L3 (milestone 1/3), the result screen explains the rating
-and the fix (milestone 2), locked levels tease what's next (milestone 7), and the
-food/vet stops read as felt lifelines with real scenery (milestone 8). The main
-open gaps are vehicle differentiation (milestone 6, parked with the vehicle-art
-ideas) and — above all — an unfamiliar-player phone test (Gate 5) to confirm the
-loop reads unaided. Fuel is back on (milestone 10, done).
-
-## Gate 0 — Project boots
-
-- [x] Initialise repository.
-- [x] Add Godot project configuration.
-- [x] Add a runnable placeholder main scene.
-- [x] Open the project in the current stable standard Godot editor.
-- [x] Confirm the project runs without warnings or import errors.
-- [x] Run the placeholder scene on macOS.
-
-## Gate 1 — Driving toy
-
-**Question:** Is basic traversal readable and satisfying enough to continue?
-
-- [x] Create one short side-view test route.
-- [x] Add one simple vehicle with accelerate and brake controls.
-- [x] Add stable, deliberately simplified wheel and suspension behaviour.
-- [x] Add fuel consumption and one fuel pickup.
-- [x] Add a finish point and restart control.
-- [ ] Test touch controls on at least one real phone. Keyboard is verified; touch
-      buttons are wired but not yet proven on-device.
-
-## Gate 2 — First passenger
-
-**Question:** Does carrying an expressive animal materially improve the driving
-loop?
-
-- [x] Add one animal passenger.
-- [x] Add animal weight to vehicle handling.
-- [x] Track comfort based on rough travel.
-- [x] Show at least three reactions: content, annoyed, delighted.
-- [x] Add a humorous loading interaction.
-- [x] Complete five internal playthroughs and record observations.
-- [x] Make comfort consequential: an animal bails at zero.
-- [x] Make comfort per-animal and temperament-sensitive.
-
-## Gate 3 — Logistics puzzle
-
-**Question:** Is preparation and animal arrangement fun, rather than
-administrative?
-
-- [x] Add three animal types with size, weight, and temperament traits.
-- [x] Add vehicle capacity.
-- [x] Add one incompatibility rule.
-- [x] Add a divided cage that resolves the incompatibility.
-- [x] Add equipment requirements.
-- [x] Add a basic mission preparation screen.
-- [x] Build five short levels.
-- [x] Re-answer the Gate 3 question honestly. The confirm-the-manifest screen is
-      gone (milestone 1): prep is now an auto-loaded brief, and a real decision
-      appears only where there is a genuine trade-off (L3's route choice). A
-      deeper "arrangement puzzle" is deliberately not pursued.
-
-## Gate 4 — Progression slice
-
-**Question:** Do players want the next vehicle and mission?
-
-- [x] Add cargo trike, jeep, and truck.
-- [x] Add one trailer.
-- [x] Add fuel, food store, vet station, and sanctuary route nodes.
-- [x] Add stars and level unlocks.
-- [x] Add six animals total.
-- [x] Build 10–15 levels. (12 levels)
-- [x] Add basic save progress.
-- [x] Make the next mission and vehicle desirable rather than merely unlocked.
-      (Level-select hooks + result-screen teaser; see milestone 7.)
-- [x] Show the player what new problem, character, route, or capability is coming.
-      (Per-level `hook` teaser; see milestone 7.)
-
-## Gate 5 — External phone test
-
-- [ ] Produce and verify a phone-playable build on real devices.
-- [ ] Test with at least 10 unfamiliar players.
-- [ ] Observe without explaining controls, rules, scoring, or progression.
-- [ ] Record completion, replay, confusion, smiles, and requests for more.
-- [ ] Make an explicit continue, revise, or stop decision.
-
-### Gate 5 success evidence
-
-The prototype earns expansion only when unfamiliar players can:
-
-- explain why an animal became upset or bailed;
-- explain why they chose a route, vehicle, or optional aid;
-- understand the star result without explanation;
-- identify what they could do differently for a better result;
-- retry voluntarily after a weak result;
-- express curiosity about the next animal, route, or vehicle.
-
-## Next milestone — prove the fun and the reason to continue
-
-This is the authoritative order of work. Do not skip ahead to upgrades, economy,
-more content, or broad polish.
-
-### 1. Remove fake preparation decisions — DONE (2026-07-18)
-
-The prep screen is now an auto-loaded mission brief (`prep.gd` `_solve_loadout`):
-it lists who rides and what is packed (with a per-item reason) and goes straight
-to DEPART. The one place prep is a real decision is a level offering a route
-choice (L3), where the brief adds a route chooser.
-
-- [x] Auto-load mission-required animals.
-- [x] Auto-include mandatory safety/handling equipment — auto-packed, with the
-      brief explaining why each item rides along.
-- [x] Show preparation only when the player has at least two valid plans with a
-      meaningful trade-off — the route chooser appears only on levels with routes.
-- [x] When no real choice exists, go directly from a concise mission brief to the
-      drive.
-- [x] Remove any remaining click whose only function is to confirm the one correct
-      answer.
-
-Possible future **real** prep choices, to build one at a time rather than all at
-once:
-
-- optional calming feed occupies capacity but slows comfort loss;
-- more rescue candidates than capacity, requiring a choice of who travels now;
-- route selection based on the animals aboard;
-- vehicle selection where two unlocked vehicles are both valid but behave
-  differently.
-
-**Acceptance test:** A player can explain what they chose, what they gave up, and
-why that mattered on the drive.
-
-### 2. Add a proper result and replay screen — DONE (2026-07-18)
-
-`result.gd` / `result.tscn` show after every rescue: the star rating in plain
-language, a roster of who arrived calm / rattled / bailed, one hint aimed at what
-actually went wrong, a next-mission teaser, and Retry / Continue actions. An
-empty arrival is a FAIL that cannot advance (retry only).
-
-- [x] Add a result screen after each rescue.
-- [x] Show who arrived and who bailed.
-- [x] Explain the exact star result in plain language.
-- [x] Give one specific improvement hint based on the run, not a generic tutorial.
-- [x] Add clear **Retry for 3 stars** and **Continue** actions.
-- [x] Preview the next unlock or next mission's new problem — uses the level hook.
-
-Example result language:
-
-> **2 stars — Everyone arrived, but Rabbit panicked on the final hill.**
-> Ease off before sharp crests to keep Rabbit calm for all 3 stars.
-
-Example continuation language:
-
-> **Next: Heavy Rescue** — unlock the truck and move a load the jeep cannot carry
-> comfortably.
-
-**Acceptance test:** Without explanation, a player knows what happened, why they
-received that rating, what to change, and why continuing may be interesting.
-
-### 3. Build one genuine route decision — DONE (2026-07-18)
-
-Level 3 is now "Which Road?" (wombat + timid rabbit). The prep brief offers two
-routes; the pick feeds the drive via `GameState.loadout_route`.
-
-- [x] Two clearly different valid routes:
-  - **Rough shortcut:** 1450px, rough 1.0, no stops — greater comfort risk.
-  - **Safe road:** longer, rough 0.6, an early feeding stop and a fuel stop — a
-    gentler ride that trades distance (and thus fuel) for safety.
-- [x] Relevant traits shown alongside the choice — the manifest lists the rabbit
-      as "timid" directly above the route buttons, and the brief calls it out.
-- [x] Consequences perceptible in the drive (terrain shape, the food stop, a bail)
-      and the result (stars + who arrived/rattled/bailed).
-- [x] No hidden correct answer. Verified by driving the shipped data:
-      | driving  | safe road      | rough shortcut     |
-      | reckless | 2★ (10.1s)     | 1★, rabbit bails (6.4s) |
-      | careful  | 3★ (21.4s)     | 2★ (12.8s)         |
-      | expert   | 3★ (29.0s)     | 3★ (17.2s)         |
-      Safe road guarantees delivery (2★ floor, never lose an animal); the shortcut
-      risks the rabbit but is the FASTER path to 3★ for a skilled driver.
-
-**Acceptance test:** met in principle — a timid rabbit makes the safe road the
-sensible pick, without making the shortcut a trap. Wants a human playtest to
-confirm players read the trade-off unaided.
-
-Fuel is now on (milestone 10): the safe road's greater length carries a real fuel
-cost priced against the shortcut, so the long road is no longer "free." The
-trade-off — safety vs distance/fuel vs speed — is now fully scored. Still wants a
-human playtest to confirm players read it unaided.
-
-### 4. Give every animal one memorable gameplay identity — DONE (2026-07-18)
-
-Each animal now carries a plain-language `personality` phrase in `Animals.DATA`
-(surfaced via `Animals.personality(id)`). The prep brief leads each passenger row
-with that phrase instead of a bare temperament word, so the player reads how to
-treat the animal — not an invisible multiplier — before departing.
-
-Target identities (as shipped in the brief):
-
-- **Wombat:** "shrugs off the roughest ride" — forgiving, ideal for learning.
-- **Rabbit:** "panics on bumps — drive it gently" — highly bump-sensitive.
-- **Fox:** "a sly escape artist; handle with gloves" — handling + compatibility.
-- **Tortoise:** "heavy but unflappable; needs a ramp" — sturdy, boards slowly.
-- **Parrot:** "loud and dramatic when jostled" — lively, unsettles a nervous mate.
-- **Goat:** "a stubborn wanderer; keep it leashed" — needs the leash capability.
-
-- [x] Make each identity visible in mission text, expression, behaviour, or a
-      concise trait badge — the brief row now leads with the trait phrase.
-- [x] Avoid exposing raw sensitivity multipliers to the player — phrases only.
-- [x] Remove or merge traits that players cannot remember or use when deciding —
-      the bare temperament word is folded into the memorable phrase.
-- [ ] Verify that a tester can describe at least three animals differently after a
-      short session. (Needs the next human playtest.)
-
-### 5. Rebuild the test campaign around five memorable missions — SUPERSEDED (2026-07-18)
-
-Built the five-mission path, then — at owner request the same day — reintroduced
-the full twelve-level campaign. The refined five stay as levels 1–5 unchanged;
-levels 6–12 (new pairings, the trailer, multi-animal hauls, lifeline stops, the
-grand convoy) are appended, each with a `hook`. `Levels.DATA` is the twelve-level
-campaign again and `ARCHIVED_LEVELS` is removed. Star totals count all levels
-(★ / 36). The distillation rationale below is kept for the record.
-
-1. **First Rescue** — wombat, trike; teaches the loop (gentle, 3★ easy).
-2. **Nervous Passenger** — timid rabbit, trike; reckless driving loses it (fail),
-   careful delivers (3★). Makes the bail stake obvious.
-3. **Which Road?** — wombat + rabbit, jeep; the safe-vs-rough route choice.
-4. **Awkward Companions** — fox + rabbit, jeep; divided cage + gloves teach
-   compatibility/handling (the brief now explains each item's purpose).
-5. **Heavy Rescue** — tortoise + wombat, truck; size 5 won't fit the jeep (cap 4),
-   so the truck earns its place. Sturdy load, rough 1.0: reckless 2★, careful 3★.
-
-- [x] Each mission introduces only one major new idea.
-- [x] Each mission has a distinct visual/terrain identity (length/rough/freq/phase).
-- [x] Each mission ends with a reason to retry or continue — verified by driving:
-      M2 reckless fails; M5 reckless 2★; the result screen names the fix.
-- [~] Cut/park missions that just repeat a manifest with larger numbers — briefly
-      true (the 12 were distilled to 5), then REVERSED at owner request: all 12
-      are active again as the campaign. Levels 6–12 grow the cast/gear/trailer
-      rather than only inflating numbers, and each carries a hook.
-
-Note: milestone 4 (memorable per-animal identities) is now addressed directly —
-each brief row leads with the animal's personality phrase. Human playtest still
-needed to confirm the arc reads unaided and testers can describe the animals.
-
-### 6. Make vehicle progression solve visible problems — DONE (2026-07-18)
-
-Each vehicle now has a legible **ride** quality (`Vehicles.DATA` `ride` /
-`ride_label`) that scales how hard terrain jolts hit passengers, shown in the prep
-brief. Vehicles are also visually distinct (tuk-tuk / open-top jeep / cab-forward
-truck) so the player can tell them apart and reason about them.
-
-- [x] Add a meaningful ride/suspension quality that changes passenger comfort —
-      `veh_ride` scales the felt jolt in `_update_comfort`. Re-verified: it shifts
-      outcomes (bumpy tuk-tuk makes L2/L9 demand care; smooth truck earns L12's
-      calm) without breaking winnability or the key stakes.
-- [x] Make the tuk-tuk bumpy but light — ride 1.18, "bumpy"; the starter vehicle.
-- [x] Make the jeep flexible and average — ride 1.0, "steady".
-- [x] Make the truck smoother and capable of heavy/fragile loads — ride 0.78,
-      "smooth" (its cost is low agility/top-end and it's the late-game rig).
-- [~] Introduce vehicle selection only when two unlocked vehicles are both valid —
-      NOT built. Vehicles are still assigned per level. A genuine vehicle *choice*
-      needs its own level design; deferred. The ride quality + legibility is what
-      makes such a choice meaningful once added.
-- [x] Explain a new vehicle as a solution to a problem the player has already felt
-      — the hooks/briefs do this (e.g. L5 "too heavy for the jeep").
-
-**Acceptance test:** partly met — a player can now read a vehicle's ride and tell
-the three apart; the remaining piece (an actual in-level vehicle choice) is the
-one deferred sub-task. Wants a human playtest to confirm the ride reads.
-
-Owner requests folded in (2026-07-18): distinct/identifiable vehicle silhouettes,
-and the trike replaced with a **tuk-tuk** — both shipped here (see below).
-
-### 7. Make progression communicate curiosity — DONE (2026-07-18)
-
-Each level now carries a one-line `hook` in `Levels.DATA`. The level-select grid
-shows it under the padlock on locked missions (so the next mission teases its new
-wrinkle instead of a bare "🔒 Locked"), and the result screen's "next" teaser
-uses the same concise hook rather than dumping the full brief.
-
-- [x] Replace bare locked-level presentation with teasers for the next new problem
-      or character — locked buttons now read "🔒 <title> / <hook>".
-- [x] Preview upcoming animals, routes, or vehicles without exposing every rule —
-      hooks name the wrinkle (route choice, incompatible pair, the truck) only.
-- [x] Make the next unlock concrete: what becomes possible, easier, or different?
-- [x] Ensure a one-star completion can unlock progress, while the result screen
-      makes replay for mastery attractive rather than compulsory — unlock needs
-      one star; the result screen offers Retry for three stars alongside Continue.
-
-The progression loop should read as:
-
-> I survived this rescue → I understand how to improve it → the next rescue adds
-> an interesting wrinkle.
-
-### 8. Verify food and vet stops read as lifelines — DONE (2026-07-18)
-
-Food and vet nodes restore per-animal comfort; the stops now read as felt
-lifelines both in the moment and on the result screen.
-
-- [x] Place a food or vet stop immediately after a deliberately rough stretch in
-      the route-choice test mission — L3's rough shortcut now carries a food stop
-      at 0.5. A driver who rushes the timid rabbit into panic can reach the feed
-      in time to steady it, then ease off and still deliver it; flat-out driving
-      still bails it first, careful play never needs it. Verified by sweeping
-      careful / reactive / reckless play on the shipped route.
-- [x] Strengthen the on-pass cue — passing a stop now perks the whole crew up for
-      ~1.8s (delighted faces + a green "Phew!" shout) on top of the targeted
-      message; the food crate / vet nurse / sanctuary building make each stop
-      legible at a glance (see the visuals commit).
-- [x] Make the result screen mention when a stop saved an animal from bailing —
-      an animal a stop pulls back from the brink, if it then arrives, is credited
-      ("🥕 A rest stop steadied X just before they bolted").
-- [x] Remove or redesign any route stop that players pass without noticing or
-      understanding — stops are now real scenery (veg crate, vet nurse tending an
-      animal, sanctuary building), not bare signs.
-
-### 9. Add scenery only where it improves readability or delight — DONE (2026-07-18)
-
-Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
-`_draw_ground_props` + prop helpers). No art pipeline.
-
-- [x] Reusable parallax set: sky gradient, drifting clouds, a second hill band
-      behind the existing one, and deterministic roadside props (trees, bushes,
-      rocks, grass tufts) rooted on the terrain and drawn in world scale.
-- [~] Distinct visual identities: partly — the prop *mix* is driven by track
-      roughness (lush→rocky), so gentle and rough routes read differently. Per-
-      mission palettes/landmarks are still open if wanted.
-- [x] Telegraph terrain/route character: prop mix tracks `track_rough`, so Level
-      3's safe road (lush) vs rough shortcut (rockier) look different. The contrast
-      is strongest on the rougher later levels (6–12, up to rough 1.35).
-- [x] No large art pipeline — all shapes are code-drawn and deterministic.
-
-Update (2026-07-18): birds were added after all, at owner request — deterministic
-flocks gliding across the sky (`_draw_birds`), flapping on a free-running clock.
-
-### 10. Restore fuel — DONE, and made to matter
-
-`FUEL_ENABLED` is now `true` and fuel is a real resource you manage, not a token
-readout:
-
-- [x] Enable the mechanic; show red jerry cans on a pallet at each fuel stop that
-      vanish when collected (`_draw_fuel_stop`), the sign+pallet staying as a place.
-- [x] Start every run on a full 100% tank.
-- [x] Fast driving burns fuel faster — burn per pixel scales by `1 + 1.7*(speed/max)^2`,
-      so flooring it costs ~1.9× a steady pace. This makes fuel reinforce the calm
-      pace comfort already rewards, *and* adds a distinct "can I reach the next pump?"
-      gamble. (Fuel still tracks distance and load too.)
-- [x] Fuel stops fill the tank right up (was +45) — a clean 100% for making it.
-- [x] Place pumps meaningfully: not too near the start, and no long dry stretch
-      after the last one. L5/L10 gained a back-half pump; L12 has three, evenly spread.
-- [x] Verified headless across three driving regimes on all 12 levels (+ both L3
-      routes): a moderate pace finishes everywhere with 23-80% reserve, a cautious
-      cruise still finishes, and flooring it runs dry on most of the long/heavy hauls.
-- [x] Dashboard (owner request): a bottom-right instrument cluster — speedometer +
-      fuel-gauge dials (not digits) and a "distance to next pump" strip
-      (`_draw_dashboard`). The fuel dial reddens as it nears empty.
-- [ ] Confirm in external play that the range gamble reads as fun, not fiddly;
-      remove again if it doesn't earn its place.
-
-## Recommended implementation sprint
-
-The next playable build should contain only:
-
-1. [x] automatic handling of mandatory prep (auto-loaded brief);
-2. [x] a clear result/replay/continue screen;
-3. [x] one meaningful safe-versus-rough route choice (Level 3);
-4. [x] one five-mission test path built around distinct situations (later expanded
-   back to the full 12 at owner request — see milestone 5);
-5. [x] minimum supporting scenery — a code-drawn parallax/props pass so the close
-   camera no longer shows a barren world (see milestone 9).
-
-Then test with 3–5 unfamiliar players before expanding further. Use the results
-to revise the build, then run the full 10-player Gate 5 test.
-
-## Owner idea backlog — 2026-07-18 (park, do not build yet)
-
-Captured mid-session while thinking; not scheduled. Several reinforce open
-milestones (noted inline). Revisit after the 3–5 player test.
-
-- **Vehicles must be readily identifiable.** DONE (2026-07-18) — each vehicle now
-  has its own silhouette: tuk-tuk (canopy on posts, rounded cabin, small front
-  wheel), open-top jeep (roll bar, windshield, chunky wheels), cab-forward truck
-  (tall windowed cab, long railed bed). Distinct colours too.
-- **Replace the trike with a tuk-tuk.** DONE (2026-07-18) — the "bicycle" vehicle
-  is now the "Tuk-Tuk" (name + drawing); the id is unchanged so levels still work.
-- **Show the player as the driver.** DONE (2026-07-18) — a simple gender-neutral
-  seated figure (`_draw_driver`) sits at each vehicle's controls: under the
-  tuk-tuk canopy, at the open jeep's windshield, and in the truck's cab window.
-- **Terrain obstacles (e.g. rocks).** Hazards some vehicles must take with care —
-  a felt difference in how each vehicle handles rough ground. Ties to milestone 6
-  (a "ride/agility" difference between vehicles) and gives driving skill more to
-  do than manage speed.
-- **Obstacle animals (e.g. a rhino).** A hazard that tips a small/light vehicle
-  over, letting the passengers escape — unharmed, but the level fails. A new,
-  legible fail source tied to vehicle choice (a bigger/heavier vehicle resists
-  it), reinforcing why the load wants the right vehicle. Keep the tone playful and
-  the escape harmless, per the design rules.
-- **Rename the home-screen title.** DONE (2026-07-18) — the game is now titled
-  **Wildlife Rescue** (owner's choice). The codename and the "Driving Toy"
-  shorthand are gone from every player-facing surface: the in-level banner
-  (`main.tscn`), the level-select header (`level_select.gd`), and the window/app
-  name (`project.godot`).
-
-## Explicitly not next
-
-Do not build these until the milestone above earns them:
-
-- additional animals, vehicles, equipment, or levels;
-- currency, shops, upgrade trees, or a large progression economy;
-- procedural level generation;
-- commercial artwork or a formal animation pipeline;
-- native app-store release work;
-- advertising, purchases, analytics, accounts, or notifications;
-- water slosh simulation;
-- free-roaming animal AI or manual capture actions;
-- multiplayer, social systems, or live events.
-
-(Note: "birds flying through the sky" moved OUT of this list — added at owner
-request 2026-07-18 as ambient sky scenery; see `_draw_birds` in main.gd.)
+- 12 long missions with terrain variation inside each level and route stops that
+  scale with distance.
+- Tuk-tuk, jeep and truck with distinct silhouettes and ride quality, plus a trailer
+  and visible player driver.
+- Six animal species with size, weight, temperament, equipment requirements,
+  compatibility rules, distinctive sprites and three moods.
+- Per-animal comfort; rough driving can make an individual animal bail harmlessly,
+  costing delivery credit and stars.
+- Fuel affected by distance, load and speed, with visible pumps and dashboard dials.
+- Food and vet stops that visibly restore the crew.
+- Rocks that visibly jolt or launch the rig when hit too fast.
+- Auto-loaded briefs, route choice where relevant, results/retry/continue, stars,
+  sequential unlocks and saved progress.
+- Per-animal calls, ambient chatter and mouth movement, vehicle audio, music and
+  route/result cues.
+- Portrait touch/keyboard controls and HTML5 export.
+
+### Current roster
+
+- **Wombat:** shrugs off the roughest ride.
+- **Rabbit:** panics on bumps — drive it gently.
+- **Fox:** sly escape artist; needs gloves and separation from Rabbit.
+- **Tortoise:** heavy but unflappable; needs a ramp.
+- **Parrot:** loud and dramatic; unsettles nervous companions.
+- **Goat:** stubborn wanderer; must be leashed.
+
+### Current design concern
+
+The roster is geographically unbalanced and the gameplay vocabulary still clusters
+around bump tolerance, mandatory equipment and incompatibility. Levels 8–12 also
+trend toward larger remixes of existing loads. The expansion must introduce new
+ways to drive, new passenger relationships and missions with a beginning, middle
+and end — not simply longer roads and bigger manifests.
+
+---
+
+## Work already in progress: longer game
+
+Claude is extending level length and expanding the campaign from 12 to approximately
+24 missions.
+
+- [ ] Confirm the final target is 24 missions and update stars, unlocks, level-select
+      layout and save migration.
+- [ ] Ensure increased length creates acts within a mission rather than empty travel.
+- [ ] Give every expanded mission a midpoint change: pickup, route branch, terrain or
+      weather shift, passenger interaction, optional rescue or vehicle consequence.
+- [ ] Keep fuel/food/vet spacing appropriate to actual route distance.
+- [ ] Prevent terrain, rock and landmark patterns from visibly repeating.
+- [ ] Re-run careful / moderate / reckless validation across all missions and routes.
+- [ ] Require every mission to have a one-sentence identity beyond “longer” or “more
+      animals.”
+
+**Acceptance test:** a player can describe what was different about each of the last
+three missions played.
+
+### External phone validation remains mandatory
+
+- [ ] Verify touch, audio unlock, mute, icons and performance on iPhone and Android.
+- [ ] Run a 3–5 person unfamiliar-player test on the expanded build.
+- [ ] Observe without explaining controls, traits, scoring or progression.
+- [ ] Record completion, retries, confusion, smiles, remembered animals and requests
+      to continue.
+- [ ] Revise, then run the full 10-player Gate 5 test.
+
+A successful tester can explain why an animal became upset, identify what to change
+for another star, distinguish animals by personality and voluntarily retry or
+continue.
+
+---
+
+# Approved expansion: international animal campaign
+
+## Expansion goal
+
+Add **six animals from different regions**, taking the roster from six to 12 and the
+campaign from 12 to about 24 missions.
+
+The expansion must:
+
+- include a distinctive **New Zealand kiwi**;
+- make the cast visibly international;
+- give every new animal a different driving or planning rule;
+- introduce each animal in one focused mission, then use it in a second interaction
+  mission;
+- give each two-level chapter recognisable environmental graphics;
+- create a collection reward through a **Sanctuary Book**, without currency, shops
+  or an upgrade economy.
+
+### Australia balance decision
+
+- Keep Wombat as the current Australian representative.
+- **Park Kangaroo.** It would reinforce the Australia-heavy roster and risks
+  duplicating jumping/bump mechanics.
+- Reconsider it only after the international six are working and tested.
+
+---
+
+## New animal roster
+
+### 1. Kiwi — New Zealand flagship
+
+**Personality:** “A suspicious night owl — no sudden starts, stops or noisy
+neighbours.”
+
+**Rule:** comfort reacts to abrupt acceleration and braking rather than ordinary
+bumps. Kiwi is strongly disturbed by Parrot unless separated.
+
+- [ ] Add smooth-input comfort logic and clear live feedback.
+- [ ] Consider a capacity-costing covered carrier only if it creates two valid plans.
+- [ ] Art: long-beak silhouette; suspicious side-eye; peck idle; puffed annoyed pose;
+      happy peck; accusatory walk-off bail.
+- [ ] Boarding gag: refuses twice, then boards as though it was its own idea.
+
+### 2. Capybara — South America
+
+**Personality:** “Heavy, hungry and impossible to rattle — everyone calms down
+beside it.”
+
+**Rule:** increases weight/fuel use but reduces comfort loss for one nervous neighbour.
+It is a beneficial passenger, not another liability.
+
+- [ ] Add a limited calming/adjacency effect that assists but does not grant immunity.
+- [ ] Art: chewing idle, slow blink, relaxed expressions and comic indifference.
+- [ ] Relationship: Rabbit gradually copies Capybara’s calm posture.
+
+### 3. Meerkat — Southern Africa
+
+**Personality:** “A tiny back-seat driver that spots trouble before you do.”
+
+**Rule:** points out approaching rocks, ridges or rough sections. Slowing in response
+delights it; repeatedly ignoring warnings annoys it.
+
+- [ ] Add sparse, useful advance warnings without another meter.
+- [ ] Art: upright scan, frantic point, proud salute and chatter.
+- [ ] Relationship: warns everyone while Wombat sleeps through it.
+
+### 4. Red Panda — Himalayan Asia
+
+**Personality:** “Adorable until the speed climbs — then it clings on for dear life.”
+
+**Rule:** tolerates uneven ground at moderate speed but panics above a sustained speed
+threshold, distinct from Rabbit’s bump sensitivity.
+
+- [ ] Add readable sustained-speed comfort logic without forcing a crawl.
+- [ ] Art: grooming idle, rail-cling, flattened ears and relieved release.
+- [ ] Pair with Wombat to make their opposite reactions obvious and funny.
+
+### 5. Raccoon — North America
+
+**Personality:** “A shameless snack thief with busy paws and no regrets.”
+
+**Rule:** changes food stops. It steals an outsized share unless supplies are secured
+or deliberately allocated.
+
+- [ ] Prototype one simple choice: secure supplies before departure or decide which
+      passenger gets a limited food boost.
+- [ ] Do not add an inventory-management system.
+- [ ] Art: rummaging idle, guilty freeze and conspicuous delighted munching.
+- [ ] Relationship: tries to steal Goat’s feed; Goat blocks the lid.
+
+### 6. Flamingo — Caribbean / Africa
+
+**Personality:** “Elegant, vain and catastrophically top-heavy.”
+
+**Rule:** sensitive to tilt, airtime and hard landings rather than normal cruising.
+May require an open/tall vehicle, but only add gear if there are multiple valid plans.
+
+- [ ] Add tilt/airtime/landing comfort input.
+- [ ] Make rocks and sharp crests its primary threat.
+- [ ] Art: tall silhouette, poised idle, neck wobble, ruffled feathers and restored
+      one-legged elegance.
+- [ ] Ensure it does not obscure the rest of the crew at phone size.
+
+---
+
+## Mandatory personality contract
+
+An animal is not complete when it merely has a colour and sensitivity multiplier.
+Every existing and future animal must ship with:
+
+1. One gameplay sentence a player can remember.
+2. One unmistakable phone-size silhouette.
+3. Content, annoyed and delighted portraits.
+4. One idle tic.
+5. One short boarding gag.
+6. One unique response tied to its actual gameplay rule.
+7. One happy behaviour, not merely a happy face.
+8. One harmless bail/refusal action.
+9. One recognisable, gain-balanced voice/call.
+10. At least one relationship with another species.
+
+### Existing-animal enhancement pass
+
+- [ ] Wombat slumps or sleeps during a smooth ride.
+- [ ] Rabbit ears become a visible early comfort signal.
+- [ ] Fox watches and tests the latch.
+- [ ] Tortoise retracts after a hard hit, then slowly emerges.
+- [ ] Parrot rarely imitates vehicle or animal sounds.
+- [ ] Goat braces its horns and stubbornly faces the wrong way.
+
+**Acceptance test:** after a short session, a tester can describe at least six
+animals differently without rereading the briefs.
+
+---
+
+## Additional animal graphics and animation
+
+### Required assets per new animal
+
+- [ ] Content, annoyed and delighted portraits.
+- [ ] Dedicated mouth-open/talking frame or reusable mouth overlay, so an annoyed
+      animal does not briefly look delighted while speaking.
+- [ ] One signature-action frame/overlay: Kiwi peck, Capybara chew, Meerkat point,
+      Red Panda cling, Raccoon rummage, Flamingo wobble.
+- [ ] Bail/refusal frame where the base portrait cannot sell the gag.
+- [ ] Matching small portrait/icon for briefs and Sanctuary Book.
+
+### Art and implementation rules
+
+- [ ] Preserve the friendly storybook mobile-mascot style.
+- [ ] Prioritise silhouette over texture or realism.
+- [ ] Keep framing, eyeline, lighting and scale consistent across moods.
+- [ ] Validate every asset at actual in-vehicle phone size.
+- [ ] Update `docs/ART_BRIEF.md` for the six new species and action frames.
+- [ ] Add an asset-completeness check for every animal ID.
+- [ ] Add per-passenger idle/action timers independent of mood and talking.
+- [ ] Prevent several large passenger actions firing simultaneously.
+- [ ] Keep animation lightweight for mobile web.
+
+---
+
+## Regional chapter graphics
+
+Each animal pair gets a recognisable palette, landmark and prop set. Use the current
+code-drawn scenery system first; do not jump to a large background-art pipeline.
+
+- [ ] **Kiwi / New Zealand:** dawn or twilight native bush, ferns, wet road sheen,
+      low mist, conservation signs and sanctuary hut.
+- [ ] **Capybara / wetlands:** reeds, lagoons, broad-leaf plants, muddy banks and
+      distant waterbirds.
+- [ ] **Meerkat / dry scrub:** grasses, termite mounds, acacias, warm rocks and long
+      horizons.
+- [ ] **Red Panda / mountain forest:** mist, pines/rhododendron, ridges and restrained
+      colour accents; avoid sacred imagery as generic decoration.
+- [ ] **Raccoon / woodland:** campsites, bins, picnic tables, cabins and evening woods.
+- [ ] **Flamingo / salt flats:** lagoons, pale flats, coastal wind, grasses and distant
+      flocks.
+
+For every chapter:
+
+- [ ] Add at least one large memorable landmark.
+- [ ] Use scenery to telegraph terrain/events, not only decorate.
+- [ ] Vary foreground and background so long routes do not look tiled.
+- [ ] Add chapter-specific arrival dressing while retaining a shared sanctuary identity.
+- [ ] Keep cultural references broad, respectful and non-stereotyped.
+
+---
+
+## Longer-level structure
+
+Simply doubling distance is not enough. Every expanded level must change state.
+
+### Mid-route pickups
+
+- [ ] Add rescue points where the vehicle stops and an animal boards midway.
+- [ ] Let selected missions begin with one passenger and add another after the first
+      route act.
+- [ ] Make added weight, compatibility, fuel use and relationships immediately visible.
+- [ ] Support occasional optional detour pickups for a bonus star or alternate result.
+- [ ] Keep pickups short and characterful; do not add manual capture gameplay.
+- [ ] Update results to credit optional rescues and explain missed ones.
+
+Other valid midpoint changes include a real route branch, weather/visibility change,
+rough-terrain phase, consequential stop, trailer/load change, relationship event or
+vehicle-choice consequence.
+
+**Acceptance test:** no expanded mission is the same handling problem for twice as
+long.
+
+---
+
+## Proposed levels 13–24
+
+Exact numbering can change for difficulty, but keep the two-level character arcs.
+
+13. **Night Shift — Kiwi:** smooth starts/stops on a damp NZ bush road.
+14. **Keep It Down — Kiwi + Parrot:** relationship-led quiet/chaos route problem.
+15. **Calm Company — Capybara:** heavy, fuel-hungry and serenely unbothered.
+16. **Borrowed Nerves — Capybara + Rabbit:** comfort benefit versus range cost.
+17. **Look Out! — Meerkat:** learn that pointing predicts real obstacles.
+18. **Back-seat Driver — Meerkat + trailer crew:** warnings matter with a slow rig.
+19. **Not So Fast — Red Panda:** sustained-speed control on a mountain road.
+20. **One of Us Is Fine — Red Panda + Wombat:** opposite reactions to one journey.
+21. **Hands Off the Snacks — Raccoon:** food-stop choice and visible mischief.
+22. **Picnic Trouble — Raccoon + Goat/Rabbit:** another passenger needs the food.
+23. **High Maintenance — Flamingo:** avoid tilt, airtime and hard landings.
+24. **International Rescue — finale:** choose a compatible crew from more candidates
+    than capacity; include multiple valid plans, a multi-act route and an optional
+    rescue. Do not repeat Level 12’s “carry everyone” structure.
+
+---
+
+## Sanctuary Book
+
+The Sanctuary Book is the collection and character-progression layer. It should make
+unlocking animals rewarding without shops, chores or an economy.
+
+### Core feature
+
+- [ ] Add a Sanctuary Book button from home/level select.
+- [ ] Show one card/page per species, initially silhouetted or partly hidden.
+- [ ] Unlock the full entry on first successful delivery.
+- [ ] Show portrait, name, broad region, personality/rule, favourite companion, pet
+      hate/incompatibility, required gear, best mission result, delivery count and
+      tap-to-hear call.
+- [ ] Add a small signature idle/action on the selected page where feasible.
+- [ ] Preview the next locked animal without revealing its full rule.
+- [ ] Show a simple completion count such as `8 / 12 animals settled`.
+
+### Reward integration
+
+- [ ] Result screen links to a newly unlocked/updated book entry.
+- [ ] Three stars may unlock a non-mechanical flourish: alternate quote, sticker,
+      pose or page badge.
+- [ ] Completing both missions for an animal unlocks its relationship note or special
+      animation.
+- [ ] Completing all 12 animals unlocks a finale page/celebration.
+- [ ] Add a lightly populated sanctuary background using existing sprites; this is
+      presentation, not free-roaming AI or sanctuary management.
+
+**Acceptance test:** a tester voluntarily opens the book, taps calls and names an
+animal they want to unlock next.
+
+---
+
+## Animal relationships and micro-events
+
+- [ ] Add a data-driven relationship table: calms, annoys, competes, copies, warns,
+      ignores.
+- [ ] Trigger short micro-events only when relevant passengers are together.
+- [ ] Prevent overlaps and avoid constant chatter.
+- [ ] Use results text only when a relationship materially affected the outcome.
+- [ ] Target moments include Kiwi glaring at Parrot, Capybara calming Rabbit, Meerkat
+      warning sleeping Wombat, Raccoon reaching for Goat’s feed and Flamingo blocking
+      Fox’s view.
+
+---
+
+## Audio expansion
+
+- [ ] Add a distinct call for each new animal and normalise per-animal gain.
+- [ ] Add one signature happy/annoyed variation where useful.
+- [ ] Add light chapter ambience without masking engine, fuel and comfort cues.
+- [ ] Preserve the one-voice-at-a-time rule or deliberately duck other audio.
+- [ ] Test all audio on iOS Safari with first-gesture unlock and silent-mode handling.
+
+---
+
+## Data and architecture
+
+- [ ] Give `Animals.DATA` behaviour IDs/fields; avoid species-name conditionals spread
+      through `main.gd`.
+- [ ] Separate comfort inputs where required: terrain jolt, sustained speed,
+      acceleration/braking spike, tilt/airtime and social noise.
+- [ ] Add safe positive effects such as Capybara calming without stacking exploits.
+- [ ] Add relationship, chapter and pickup/event data to levels.
+- [ ] Make prep, HUD, results and Sanctuary Book read the same personality data.
+- [ ] Migrate saves safely to 24 levels, 12 animals and book unlocks.
+- [ ] Validate missing sprites, voices, behaviour handlers, props and references.
+- [ ] Keep player-facing text descriptive; never expose raw sensitivity multipliers.
+
+---
+
+## Implementation order
+
+### Phase A — long-route foundation
+
+1. [ ] Complete length/terrain work underway.
+2. [ ] Expand level-select/save/star systems to 24 safely.
+3. [ ] Add generic midpoint pickup/event support.
+4. [ ] Validate fuel, comfort and stop spacing.
+
+### Phase B — one complete expansion slice
+
+5. [ ] Build Kiwi mechanics, full graphics and call.
+6. [ ] Build NZ chapter palette/props.
+7. [ ] Build Levels 13–14 and Kiwi + Parrot interaction.
+8. [ ] Add first Sanctuary Book version with the existing six plus Kiwi.
+9. [ ] Phone-test before producing the remaining five art sets.
+
+### Phase C — remaining animal pairs
+
+10. [ ] Capybara + Levels 15–16.
+11. [ ] Meerkat + Levels 17–18.
+12. [ ] Red Panda + Levels 19–20.
+13. [ ] Raccoon + Levels 21–22.
+14. [ ] Flamingo + Levels 23–24.
+15. [ ] Build each chapter’s graphics, landmark, action and audio alongside its
+       mechanics; do not batch all art before gameplay is proven.
+
+### Phase D — cohesion and validation
+
+16. [ ] Existing-six personality animation pass.
+17. [ ] Relationship micro-events across old and new animals.
+18. [ ] Complete Sanctuary Book rewards/populated presentation.
+19. [ ] Rebalance difficulty, stars, mission order and unlock teasers.
+20. [ ] Full 24-level automated validation and real-device regression.
+21. [ ] 3–5 player revision test, then 10-player Gate 5 test.
+
+---
+
+## Expansion success criteria
+
+- Every new animal changes how the player drives, plans or reads the route.
+- Kiwi feels like a flagship character, not a regional checkbox.
+- Players remember animals by behaviour and personality.
+- Long missions contain changing situations rather than padded distance.
+- Regional graphics make chapters recognisable at a glance.
+- Sanctuary Book creates curiosity and affection without chores.
+- Level 24 asks for judgement and crew selection, not maximum capacity.
+- Performance and readability remain strong on real phones.
+
+---
+
+## Explicitly not part of this expansion
+
+- Currency, shops, loot, consumable economies or upgrade trees.
+- Daily tasks, timers, feeding chores or sanctuary-management simulation.
+- Procedural levels, free-roaming animal AI or manual capture.
+- Injury, suffering, predation or death; failure remains humorous and harmless.
+- Multiplayer, social systems, live events, ads, purchases or accounts.
+- Native app-store work until the expanded prototype is proven.
+- A large skeletal-animation or commercial-art pipeline before lightweight action
+  frames are validated.
+- Kangaroo until the international roster is tested.
+
+---
+
+## Standing design rules
+
+- Never ask the player to click the only correct answer.
+- Prefer one memorable rule per animal over many numerical differences.
+- Every mission introduces, combines or tests a distinct idea.
+- Every long level changes state at least once.
+- Every vehicle, item or stop solves a problem the player has felt.
+- Consequences stay playful: annoyance, refusal, bailing, lost stars and missed
+  opportunities — never visible harm.
+- Build one animal/chapter pair completely before scaling the art pipeline.
+- Test unfamiliar players before assuming designer intent is legible.
