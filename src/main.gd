@@ -143,6 +143,7 @@ var _cam := Vector2.ZERO # world point at the screen's top-left, set each frame
 var anim_t := 0.0        # free-running clock for ambient motion (bird wingbeats)
 var jolt_cd := 0.0       # cooldown so one bump plays one thud, not a burst
 var warn_cd := 0.0       # cooldown for the repeating "about to jump" chirp
+var voice_cd := 0.0      # countdown to the next occasional ambient animal call
 var passengers: Array[String] = []
 # Per-passenger state, all parallel to `passengers` and (re)built in _reset_run.
 var comforts: Array[float] = []       # 0..100 mood
@@ -305,6 +306,29 @@ func _update_audio(delta: float) -> void:
 				Audio.play("warn", -12.0)
 				warn_cd = 0.6
 				break
+
+	# Occasional ambient chatter: now and then a passenger still aboard makes its own
+	# call — the parrot squawks, the goat bleats — so the journey feels alive. Spaced
+	# out, and one voice at a time (Audio.voice_ambient refuses to start over a voice
+	# already sounding, so the crew never talks over each other). An animal that's
+	# fretting speaks up a little more often.
+	voice_cd -= delta
+	if voice_cd <= 0.0:
+		var pool: Array[int] = []
+		for i in passengers.size():
+			if bailed[i]:
+				continue
+			pool.append(i)
+			if states[i] == "annoyed":
+				pool.append(i)
+		if pool.is_empty():
+			voice_cd = 2.0
+		else:
+			var pick: int = pool[randi() % pool.size()]
+			if Audio.voice_ambient(passengers[pick], -10.0, randf_range(0.95, 1.06)):
+				voice_cd = randf_range(4.5, 8.5)
+			else:
+				voice_cd = 0.7   # a call is still sounding; check back shortly
 
 
 func _bail_animal(index: int) -> void:
@@ -1388,6 +1412,7 @@ func _reset_run() -> void:
 	advancing = false
 	relief_t = 0.0
 	stop_saved_idx.clear()
+	voice_cd = randf_range(3.0, 5.0)   # first ambient call a few seconds into the drive
 	drive_pressed = false
 	brake_pressed = false
 	finished = false

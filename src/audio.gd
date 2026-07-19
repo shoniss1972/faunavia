@@ -16,6 +16,7 @@ var _sfx: Array[AudioStreamPlayer] = []   # a small pool for one-shot cues
 var _sfx_next := 0
 var _engine: AudioStreamPlayer
 var _music: AudioStreamPlayer
+var _voice_amb: AudioStreamPlayer         # one dedicated channel for ambient chatter
 var _clips := {}                          # name -> AudioStream (procedural or file)
 var _voices := {}                         # animal id -> voice AudioStream (optional)
 var _engine_shape := ""
@@ -43,6 +44,10 @@ func _ready() -> void:
 	_music.stream = _clips["music"]
 	_music.volume_db = -16.0
 	add_child(_music)
+
+	_voice_amb = AudioStreamPlayer.new()
+	_voice_amb.bus = "Master"
+	add_child(_voice_amb)
 
 	_build_mute_button()
 	set_muted(muted)
@@ -199,6 +204,20 @@ func _set_loop(res: AudioStream) -> void:
 		res.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		res.loop_begin = 0
 		res.loop_end = int(res.get_length() * float(res.mix_rate))
+
+
+func voice_ambient(animal_id: String, volume_db := -10.0, pitch := 1.0) -> bool:
+	# A one-at-a-time ambient call on a dedicated channel: plays the animal's voice,
+	# but only if no ambient voice is already sounding — so the crew never talk over
+	# each other during the drive. Returns whether a call actually started (the caller
+	# uses that to decide when to try again). No-op with no voice pack.
+	if not _voices.has(animal_id) or _voice_amb == null or _voice_amb.playing:
+		return false
+	_voice_amb.stream = _voices[animal_id]
+	_voice_amb.volume_db = volume_db
+	_voice_amb.pitch_scale = pitch
+	_voice_amb.play()
+	return true
 
 
 func play_voice(animal_id: String, volume_db := -8.0, pitch := 1.0) -> void:
