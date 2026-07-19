@@ -219,7 +219,8 @@ const DATA := [
 		"length": 6400, "rough": 0.85, "freq": 1.0, "phase": 300.0,
 		"route": [
 			{"type": "fuel", "at": 0.3},
-			{"type": "food", "at": 0.55},
+			{"type": "food", "at": 0.42},
+			{"type": "fuel", "at": 0.54},
 			{"type": "fuel", "at": 0.78},
 			{"type": "sanctuary", "at": 1.0},
 		],
