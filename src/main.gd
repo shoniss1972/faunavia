@@ -5,7 +5,6 @@ const SPEED_TO_MPH := 0.1            # internal units -> a readable mph (truck t
 									 # a sane pace over hilly wildlife-park ground)
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
-const FUEL_PICKUP_AMOUNT := 45.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
 
@@ -86,6 +85,11 @@ const SUSPENSION_DAMPING := 11.0
 # so the cargo is felt, not just labelled.
 const ACCEL_MASS_PENALTY := 0.45   # fraction of acceleration lost at load 1.0
 const FUEL_MASS_PENALTY := 2.4     # multiplies fuel burn per pixel at load 1.0
+# Fast driving drinks fuel. Burn per pixel is scaled by 1 + this*(speed/max)^2, so
+# at top speed each vehicle burns 1+FUEL_SPEED_PENALTY x the per-pixel rate it does
+# at a crawl. This makes flooring it a real range gamble — you may not reach the
+# next pump — on top of its comfort cost, so a steady pace is rewarded twice.
+const FUEL_SPEED_PENALTY := 1.7
 const SAG_PER_MASS := 14.0         # extra pixels the body sags at load 1.0
 const LOAD_TIME := 1.4             # seconds the reluctant crew takes to clamber aboard
 
@@ -217,11 +221,14 @@ func _process(delta: float) -> void:
 		speed = max(speed - BRAKING * delta, 0.0)
 		message_label.text = "Out of fuel — coast if you can, or reset."
 
-	# Fuel is a range meter: distance travelled burns fuel, and a heavier load
-	# burns more per pixel. Speed is a comfort concern, not a fuel one.
+	# Fuel is a range meter: distance travelled burns fuel, a heavier load burns
+	# more per pixel, and driving fast burns more still (drag rises with speed^2).
+	# So the same stretch of road costs more fuel the harder you push it.
 	var dist := speed * delta
 	if FUEL_ENABLED:
-		fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * dist, 0.0)
+		var speed_ratio := speed / maxf(veh_max_speed, 1.0)
+		var speed_mult := 1.0 + FUEL_SPEED_PENALTY * speed_ratio * speed_ratio
+		fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * speed_mult * dist, 0.0)
 	vehicle_x = min(vehicle_x + dist, track_len + TRACK_BUFFER)
 
 	_check_route_nodes()
@@ -358,8 +365,11 @@ func _check_route_nodes() -> void:
 		nodes_used[nx] = true
 		match ntype:
 			"fuel":
-				fuel = min(fuel + FUEL_PICKUP_AMOUNT, 100.0)
-				message_label.text = "Fuel collected. Keep going!"
+				# A pump fills the tank right up, so the decision is simply "can I
+				# reach the next one?" — reward for making it is a clean 100%.
+				fuel = 100.0
+				Audio.play("star", -9.0)
+				message_label.text = "Tank filled — full again!"
 			"food":
 				# A top-up: lifts spirits, and can pull a fretting animal back from
 				# the brink if you reach it before it bails.

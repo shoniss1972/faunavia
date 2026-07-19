@@ -87,6 +87,7 @@ const DATA := [
 		"route": [
 			{"type": "fuel", "at": 0.3},
 			{"type": "vet", "at": 0.5},
+			{"type": "fuel", "at": 0.68},
 			{"type": "sanctuary", "at": 1.0},
 		],
 		"hook": "Too heavy for the jeep — the truck earns its place.",
@@ -131,6 +132,7 @@ const DATA := [
 		"route": [
 			{"type": "fuel", "at": 0.3},
 			{"type": "vet", "at": 0.55},
+			{"type": "fuel", "at": 0.7},
 			{"type": "sanctuary", "at": 1.0},
 		],
 		"hook": "A long haul with a vet stop to keep the crew calm.",
@@ -150,10 +152,11 @@ const DATA := [
 		"equipment": ["gloves", "ramp", "leash"], "trailer": true,
 		"length": 5800, "rough": 1.35, "freq": 1.05, "phase": 900.0,
 		"route": [
-			{"type": "fuel", "at": 0.25},
-			{"type": "food", "at": 0.48},
-			{"type": "fuel", "at": 0.62},
-			{"type": "vet", "at": 0.85},
+			{"type": "fuel", "at": 0.22},
+			{"type": "food", "at": 0.4},
+			{"type": "fuel", "at": 0.5},
+			{"type": "fuel", "at": 0.75},
+			{"type": "vet", "at": 0.88},
 			{"type": "sanctuary", "at": 1.0},
 		],
 		"hook": "Five animals, truck and trailer — the big one.",
