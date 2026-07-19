@@ -1,6 +1,8 @@
 extends Control
 
 const TRACK_BUFFER := 160.0          # ground drawn past the sanctuary
+const SPEED_TO_MPH := 0.1            # internal units -> a readable mph (truck tops ~30,
+                                     # a sane pace over hilly wildlife-park ground)
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FUEL_PICKUP_AMOUNT := 45.0
@@ -232,10 +234,10 @@ func _process(delta: float) -> void:
 	_update_audio(delta)
 
 	if FUEL_ENABLED:
-		fuel_label.text = "Fuel: %d%%   Speed: %d" % [roundi(fuel), roundi(speed)]
+		fuel_label.text = "Fuel: %d%%   %d mph" % [roundi(fuel), roundi(speed * SPEED_TO_MPH)]
 		_update_fuel_colour()
 	else:
-		fuel_label.text = "Speed: %d" % roundi(speed)
+		fuel_label.text = "%d mph" % roundi(speed * SPEED_TO_MPH)
 	queue_redraw()
 
 
@@ -1243,6 +1245,6 @@ func _reset_run() -> void:
 	drive_pressed = false
 	brake_pressed = false
 	finished = false
-	fuel_label.text = ("Fuel: %d%%   Speed: 0" % roundi(veh_start_fuel)) if FUEL_ENABLED else "Speed: 0"
+	fuel_label.text = ("Fuel: %d%%   0 mph" % roundi(veh_start_fuel)) if FUEL_ENABLED else "0 mph"
 	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]
 	queue_redraw()
