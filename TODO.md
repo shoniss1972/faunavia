@@ -400,22 +400,28 @@ Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
 Update (2026-07-18): birds were added after all, at owner request — deterministic
 flocks gliding across the sky (`_draw_birds`), flapping on a free-running clock.
 
-### 10. Restore fuel — DONE
+### 10. Restore fuel — DONE, and made to matter
 
-`FUEL_ENABLED` is now `true`. Fuel is a range meter: distance and load burn it
-(speed does not), so it stays a *different* decision from comfort (terrain and
-driving). Route stops top it up, and each fuel stop shows red jerry cans on a
-pallet that disappear once the vehicle fuels up (the pallet+sign stay as a place).
+`FUEL_ENABLED` is now `true` and fuel is a real resource you manage, not a token
+readout:
 
-- [x] Enable the mechanic (`FUEL_ENABLED = true`).
-- [x] Add visible fuel cans at fuel stops that vanish when collected (`_draw_fuel_stop`).
-- [x] Rebalance for the 2× lengths: `fuel_per_px` halved on every vehicle so the
-      economy matches the pre-doubling tuning.
-- [x] Give every level refuel access: custom-route levels (3 safe/rough, 5, 10, 12)
-      gained fuel stops; L12 (longest, heaviest) gets two.
-- [x] Verified all 12 levels + both L3 routes finish careful with fuel to spare
-      (tightest reserve L10 ~14%), delivery/stars unchanged from the pre-fuel baseline.
-- [ ] Confirm in external play that the range meter reads as fun, not fiddly;
+- [x] Enable the mechanic; show red jerry cans on a pallet at each fuel stop that
+      vanish when collected (`_draw_fuel_stop`), the sign+pallet staying as a place.
+- [x] Start every run on a full 100% tank.
+- [x] Fast driving burns fuel faster — burn per pixel scales by `1 + 1.7*(speed/max)^2`,
+      so flooring it costs ~1.9× a steady pace. This makes fuel reinforce the calm
+      pace comfort already rewards, *and* adds a distinct "can I reach the next pump?"
+      gamble. (Fuel still tracks distance and load too.)
+- [x] Fuel stops fill the tank right up (was +45) — a clean 100% for making it.
+- [x] Place pumps meaningfully: not too near the start, and no long dry stretch
+      after the last one. L5/L10 gained a back-half pump; L12 has three, evenly spread.
+- [x] Verified headless across three driving regimes on all 12 levels (+ both L3
+      routes): a moderate pace finishes everywhere with 23-80% reserve, a cautious
+      cruise still finishes, and flooring it runs dry on most of the long/heavy hauls.
+- [x] Dashboard (owner request): a bottom-right instrument cluster — speedometer +
+      fuel-gauge dials (not digits) and a "distance to next pump" strip
+      (`_draw_dashboard`). The fuel dial reddens as it nears empty.
+- [ ] Confirm in external play that the range gamble reads as fun, not fiddly;
       remove again if it doesn't earn its place.
 
 ## Recommended implementation sprint
