@@ -153,6 +153,8 @@ var bailed: Array[bool] = []          # has it leapt off the truck
 var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
 var load_factor := 0.5
 var has_cage := false
+var has_leash := false
+var has_ramp := false
 var has_trailer := false
 var vehicle_data := {}
 var veh_max_speed := 260.0
@@ -988,7 +990,10 @@ func _draw_trailer() -> void:
 		var seat_y := -20.0 + _passenger_load_offset()
 		for k in tm:
 			var fx := (tleft + tright) * 0.5 if tm == 1 else lerpf(tleft, tright, float(k) / float(tm - 1))
-			_draw_seat(Vector2(fx, seat_y), tr, t_ids[k])
+			var seat := Vector2(fx, seat_y)
+			_draw_seat(seat, tr, t_ids[k])
+			if has_leash and passengers[t_ids[k]] == "goat" and not bailed[t_ids[k]]:
+				_draw_leash(seat, tr, -22.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -997,6 +1002,10 @@ func _draw_vehicle() -> void:
 	var angle := atan2(slope, 36.0)
 	var ground_y := terrain_y(vehicle_x)
 	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
+
+	# The loading ramp (if the load needs one) sits on the ground behind the rig
+	# while the crew boards — drawn first so the vehicle overlaps its top edge.
+	_draw_ramp()
 
 	var bw: float = vehicle_data.get("body_w", 96.0)
 	var bh: float = vehicle_data.get("body_h", 32.0)
@@ -1194,11 +1203,52 @@ func _draw_passenger(y_offset: float) -> void:
 		right = left
 	for k in m:
 		var fx := (left + right) * 0.5 if m == 1 else lerpf(left, right, float(k) / float(m - 1))
-		_draw_seat(Vector2(fx, body_top - 6.0) + off, r, bed[k])
+		var seat := Vector2(fx, body_top - 6.0) + off
+		_draw_seat(seat, r, bed[k])
+		if has_leash and passengers[bed[k]] == "goat" and not bailed[bed[k]]:
+			_draw_leash(seat, r, body_top)
 	if has_cage and m > 1:
 		# A divider bar between the animals — the divided cage keeping the peace.
 		var bar_x := lerpf(left, right, 0.5)
 		draw_line(Vector2(bar_x, body_top - 22.0) + off, Vector2(bar_x, body_top + 6.0) + off, Color("#4a4f45"), 3.0)
+
+
+func _draw_leash(seat: Vector2, r: float, body_top: float) -> void:
+	# The 'keep it leashed' gear made visible: a post on the bed with a taut lead
+	# clipped to the goat's collar. Drawn in the body transform so it rides along.
+	var lead := Color("#33291a")
+	var post_x := seat.x + r * 1.5
+	var post_top := Vector2(post_x, body_top - 15.0)
+	draw_line(Vector2(post_x, body_top + 3.0), post_top, Color("#4a3d2a"), 2.6)   # post
+	draw_circle(post_top, 2.2, Color("#4a3d2a"))                                  # ring on top
+	# A collar band on the goat's neck, and the lead running from it up to the ring.
+	var collar := seat + Vector2(r * 0.15, r * 0.6)
+	draw_line(collar + Vector2(-r * 0.5, 0), collar + Vector2(r * 0.5, 0), lead, 2.2)
+	var mid := (post_top + collar) * 0.5 + Vector2(0.0, 3.5)
+	draw_polyline(PackedVector2Array([post_top, mid, collar]), lead, 2.0)
+
+
+func _draw_ramp() -> void:
+	# The loading ramp made visible: a planked board from the ground up to the bed's
+	# back edge while the crew boards. Stowed once loaded, so it only shows at the
+	# start of a run. Drawn in world space through the zoom, so it sits on the ground.
+	if not has_ramp or is_loaded:
+		return
+	var bw: float = vehicle_data.get("body_w", 96.0)
+	var bh: float = vehicle_data.get("body_h", 32.0)
+	var back_x := vehicle_x - bw * 0.5
+	var top := Vector2(back_x + 2.0, body_y + (4.0 - bh) + bh * 0.6)   # bed back, lower rim
+	var foot_x := back_x - bw * 0.6
+	var foot := Vector2(foot_x, terrain_y(foot_x) - 1.0)              # on the ground behind
+	var dir := (foot - top).normalized()
+	var n := Vector2(-dir.y, dir.x) * 5.0                             # plank half-thickness
+	draw_colored_polygon(PackedVector2Array([
+		_w2s(top + n), _w2s(foot + n), _w2s(foot - n), _w2s(top - n)]), Color("#9c7a4c"))
+	# Cross-slats for grip, and a darker underside edge so it reads as a solid board.
+	draw_line(_w2s(foot - n), _w2s(top - n), Color("#6f5436"), 1.6 * WORLD_ZOOM)
+	for i in range(1, 6):
+		var p := top.lerp(foot, float(i) / 6.0)
+		draw_line(_w2s(p + n), _w2s(p - n), Color("#7a5c39"), 1.5 * WORLD_ZOOM)
 
 
 func _fur(id: String) -> Color:
@@ -1392,6 +1442,8 @@ func _reset_run() -> void:
 		bail_t.append(0.0)
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
+	has_leash = "leash" in GameState.loadout_equipment
+	has_ramp = "ramp" in GameState.loadout_equipment
 	has_trailer = GameState.loadout_trailer
 	vehicle_data = Vehicles.get_data(GameState.current_vehicle())
 	veh_max_speed = vehicle_data["max_speed"]
