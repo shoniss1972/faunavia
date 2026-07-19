@@ -33,6 +33,8 @@ const DATA := {
 		"name": "Jeep", "capacity": 4, "shape": "jeep",
 		"max_speed": 260.0, "acceleration": 150.0,
 		"start_fuel": 100.0, "fuel_per_px": 0.006, "load_ref": 44.0,
+		"seat_front": 0.14,   # driver rides in the open here, so seat the crew further back
+
 		"ride": 1.0, "ride_label": "steady",
 		"colour": "#d9824b", "body_w": 96.0, "body_h": 32.0,
 		"wheel_r": 16.0, "wheel_dx": 30.0,

@@ -1071,9 +1071,9 @@ func _veh_jeep_front(bw: float, bh: float, body_top: float, col: Color) -> void:
 	draw_rect(Rect2(bw * 0.02, body_top - 20.0, bw * 0.14, 4.0), frame, true)   # visor
 	draw_rect(Rect2(-bw * 0.5, body_top + bh * 0.55, bw, bh * 0.5), col.darkened(0.18), true)  # wheel arches
 	draw_circle(Vector2(bw * 0.47, body_top + bh * 0.35), 3.2, Color("#f2e28a"))  # headlight
-	# Driver up in the front seat under the windshield, clear of the bed so it never
-	# sits over a passenger's face.
-	_draw_driver(bw * 0.20, body_top - 11.0, 1.4)
+	# Driver up in the front seat behind the windshield, ahead of the pulled-back
+	# crew (see seat_front) so it never sits over a passenger's face.
+	_draw_driver(bw * 0.28, body_top - 11.0, 1.4)
 
 
 func _veh_truck(bw: float, bh: float, body_top: float, col: Color) -> void:
@@ -1099,13 +1099,20 @@ func _passenger_load_offset() -> float:
 	return 26.0
 
 
+func _seat_front() -> float:
+	# The bed's front edge, as a fraction of body width. Defaults to the cab line,
+	# but a vehicle with the driver seated in the open (the jeep, which has no cab to
+	# separate them) pulls it back via `seat_front` so the crew rides behind the
+	# driver with a clear gap rather than crowding the front seat.
+	return float(vehicle_data.get("seat_front", CAB_X))
+
+
 func _crew_head_radius(bw: float, bh: float, n: int) -> float:
 	# Head size for a crew, solved from the bed rather than tuned per vehicle: fit
-	# n heads between the bed's back edge and the cab, letting each overlap its
-	# neighbour down to HEAD_SPACING before shrinking them. A lone passenger gets
-	# the full head. New vehicles re-solve from their own body box — no numbers to
-	# revisit.
-	var bed := bw * (SEAT_BACK + CAB_X)
+	# n heads between the bed's back edge and the front seat line, letting each
+	# overlap its neighbour down to HEAD_SPACING before shrinking them. A lone
+	# passenger gets the full head. New vehicles re-solve from their own body box.
+	var bed := bw * (SEAT_BACK + _seat_front())
 	var head_w := bed / (1.0 + HEAD_SPACING * float(n - 1))
 	return clampf(minf(bh * SOLO_HEAD, head_w / HEAD_W_PER_RADIUS), MIN_HEAD, MAX_HEAD)
 
@@ -1155,7 +1162,7 @@ func _draw_passenger(y_offset: float) -> void:
 	var r := _crew_head_radius(bw, bh, m)
 	var half := r * HEAD_W_PER_RADIUS * 0.5
 	var left := -bw * SEAT_BACK + half
-	var right := bw * CAB_X - half
+	var right := bw * _seat_front() - half
 	if right < left:
 		# Bed too narrow for the crew even at MIN_HEAD: stack them at its centre
 		# rather than letting the row invert and run backwards.
