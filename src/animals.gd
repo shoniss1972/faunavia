@@ -13,36 +13,55 @@ extends RefCounted
 #   colour       — fur/feather colour drawn in the cab
 #   incompatible — ids this animal cannot ride beside without a divided cage
 #   requires     — equipment ids that must be aboard to carry this animal
+#   comfort      — per-input comfort SENSITIVITY, the data behind the drive's
+#                  comfort model (main.gd). Each key is a distinct source of unease
+#                  and its value multiplies how fast that source drains this animal
+#                  (0 or absent = immune). This is what lets each new species drive
+#                  differently without species-name branches in main.gd:
+#                    jolt    — sharp terrain bumps (the classic bump-tolerance axis)
+#                    speed   — sustained high speed (a Red Panda clings on)
+#                    accel   — abrupt starts/stops (a Kiwi hates sudden inputs)
+#                    airtime — tilt / launches / hard landings (a top-heavy Flamingo)
+#                    social  — a loud or disliked neighbour (see relationships, TBD)
+#                  The current six read the ride through `jolt` only, so they behave
+#                  exactly as before; the other inputs arrive with the animals that
+#                  use them.
 const DATA := {
 	"wombat": {
 		"name": "Wombat", "size": 2, "weight": 26.0, "temperament": "placid",
 		"personality": "shrugs off the roughest ride",
 		"colour": "#7d6f63", "incompatible": [], "requires": [],
+		"comfort": {"jolt": 0.55},
 	},
 	"rabbit": {
 		"name": "Rabbit", "size": 1, "weight": 3.0, "temperament": "timid",
 		"personality": "panics on bumps — drive it gently",
 		"colour": "#cbb89d", "incompatible": ["fox", "parrot"], "requires": [],
+		"comfort": {"jolt": 1.7},
 	},
 	"fox": {
 		"name": "Fox", "size": 2, "weight": 7.0, "temperament": "sly",
 		"personality": "a sly escape artist; handle with gloves",
 		"colour": "#c8743a", "incompatible": ["rabbit"], "requires": ["gloves"],
+		"comfort": {"jolt": 1.0},
 	},
 	"tortoise": {
 		"name": "Tortoise", "size": 3, "weight": 40.0, "temperament": "slow",
 		"personality": "heavy but unflappable; needs a ramp",
 		"colour": "#6f7d52", "incompatible": [], "requires": ["ramp"],
+		"comfort": {"jolt": 0.7},
 	},
 	"parrot": {
 		"name": "Parrot", "size": 1, "weight": 1.0, "temperament": "loud",
 		"personality": "loud and dramatic when jostled",
 		"colour": "#3f9d5a", "incompatible": ["rabbit"], "requires": [],
+		"comfort": {"jolt": 1.3},
 	},
 	"goat": {
 		"name": "Goat", "size": 2, "weight": 14.0, "temperament": "stubborn",
 		"personality": "a stubborn wanderer; keep it leashed",
 		"colour": "#b0a89a", "incompatible": [], "requires": ["leash"],
+		"comfort": {"jolt": 0.9},
 	},
 }
 
@@ -57,3 +76,10 @@ static func display_name(id: String) -> String:
 
 static func personality(id: String) -> String:
 	return DATA.get(id, {}).get("personality", "")
+
+
+static func comfort_sens(id: String, input: String) -> float:
+	# How fast `input` (jolt/speed/accel/airtime/social) drains this animal's comfort.
+	# 0 (or absent) means immune to that source — the drive multiplies each frame's
+	# stress by this, so a species declares its whole ride personality here.
+	return float(DATA.get(id, {}).get("comfort", {}).get(input, 0.0))

@@ -132,22 +132,28 @@ const COMFORT_ANNOYED := 40.0          # at or below this the passenger is annoy
 const COMFORT_DELIGHTED := 80.0        # at or above this, and moving well, it is delighted
 const COMFORT_PANIC := 18.0            # at or below this it is on the verge of bailing (telegraph)
 
-# How fast each temperament sheds comfort, as a multiplier on the drain rate. The
-# words come from Animals.DATA; a timid animal is twice as fragile as a placid one.
-const TEMPERAMENT_SENSITIVITY := {
-	"timid": 1.7,     # rabbit — nervous, bolts first
-	"loud": 1.3,      # parrot — dramatic
-	"sly": 1.0,       # fox — average
-	"stubborn": 0.9,  # goat — complains but digs in
-	"slow": 0.7,      # tortoise — serene
-	"placid": 0.55,   # wombat — barely notices
-}
+# Comfort drains from several independent sources of unease, each expressed in the
+# same "over-threshold" units so one loss rate (COMFORT_LOSS_RATE) covers them all.
+# How much each source drains a given animal is that animal's per-input sensitivity
+# in Animals.DATA "comfort" (0 = immune) — so a species declares its ride personality
+# in data, not via a species branch here. The thresholds/gains below turn the raw
+# ride into those units. `jolt` is the long-standing bump axis, tuned for real; the
+# speed/accel/airtime gains are first-pass values, to be tuned against the first
+# animal that actually uses each (Red Panda / Kiwi / Flamingo) — the current six are
+# sensitive to `jolt` only, so these do not affect them.
+const COMFORT_SPEED_RATIO := 0.6       # speed/max above this stresses a speed-shy animal
+const COMFORT_SPEED_GAIN := 150.0
+const COMFORT_ACCEL_THRESHOLD := 120.0 # |Δspeed|/s above this reads as an abrupt start/stop
+const COMFORT_ACCEL_GAIN := 0.4
+const COMFORT_AIRTIME_THRESHOLD := 4.0 # px of hop above this reads as airtime/launch
+const COMFORT_AIRTIME_GAIN := 2.0
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
 
 var vehicle_x := 100.0
 var speed := 0.0
+var prev_speed := 0.0    # last frame's speed, for the abrupt-accel/braking comfort input
 var fuel := 100.0
 var drive_pressed := false
 var brake_pressed := false
@@ -291,22 +297,38 @@ func _process(delta: float) -> void:
 
 
 func _update_comfort(delta: float) -> void:
-	# Each passenger reads the ride through the shared suspension: a sharp jolt
-	# drains its comfort at a rate set by temperament, calm travel lets it recover.
+	# Each passenger reads the ride through several sources of unease and drains at
+	# its own sensitivity to each (Animals "comfort"); calm travel lets it recover.
 	# Comfort selects the mood the animal wears, and reaching zero bails it off.
 	# The vehicle's ride quality scales how hard each jolt lands: the truck soaks
 	# bumps up (ride < 1), the trike rattles (ride > 1) — see milestone 6.
-	var jolt := absf(body_vy) * veh_ride
-	var over := jolt - COMFORT_JOLT_THRESHOLD
+	#
+	# One "stress" value per source, all in the same over-threshold units. The six
+	# current animals are sensitive to `jolt` only, so this reproduces the old model
+	# exactly for them; new species opt into the other inputs via their data.
+	var speed_ratio := speed / maxf(veh_max_speed, 1.0)
+	var accel_mag := absf(speed - prev_speed) / maxf(delta, 0.0001)
+	prev_speed = speed
+	var stress := {
+		"jolt": maxf(absf(body_vy) * veh_ride - COMFORT_JOLT_THRESHOLD, 0.0),
+		"speed": maxf(speed_ratio - COMFORT_SPEED_RATIO, 0.0) * COMFORT_SPEED_GAIN,
+		"accel": maxf(accel_mag - COMFORT_ACCEL_THRESHOLD, 0.0) * COMFORT_ACCEL_GAIN,
+		"airtime": maxf(veh_hop - COMFORT_AIRTIME_THRESHOLD, 0.0) * COMFORT_AIRTIME_GAIN,
+		"social": 0.0,   # driven by the relationships table (added with the new cast)
+	}
 	for i in passengers.size():
 		if bailed[i]:
 			bail_t[i] += delta
 			continue
 		if talk_t[i] > 0.0:
 			talk_t[i] = maxf(talk_t[i] - delta, 0.0)
-		var sens: float = TEMPERAMENT_SENSITIVITY.get(Animals.get_data(passengers[i]).get("temperament", ""), 1.0)
-		if over > 0.0:
-			comforts[i] -= over * COMFORT_LOSS_RATE * sens * delta
+		var id: String = passengers[i]
+		var drain := 0.0
+		for src in stress:
+			if stress[src] > 0.0:
+				drain += stress[src] * Animals.comfort_sens(id, src)
+		if drain > 0.0:
+			comforts[i] -= drain * COMFORT_LOSS_RATE * delta
 		else:
 			comforts[i] += COMFORT_RECOVERY * delta
 		comforts[i] = clampf(comforts[i], 0.0, COMFORT_MAX)
@@ -606,7 +628,8 @@ func _hit_rock() -> void:
 	for i in passengers.size():
 		if bailed[i]:
 			continue
-		var sens: float = TEMPERAMENT_SENSITIVITY.get(Animals.get_data(passengers[i]).get("temperament", ""), 1.0)
+		# A rock strike is a sharp jolt, so it draws on the animal's jolt sensitivity.
+		var sens: float = Animals.comfort_sens(passengers[i], "jolt")
 		comforts[i] = maxf(comforts[i] - hit * sens, 0.0)
 
 
@@ -1104,7 +1127,7 @@ func _draw_trailer() -> void:
 			var fx := (tleft + tright) * 0.5 if tm == 1 else lerpf(tleft, tright, float(k) / float(tm - 1))
 			var seat := Vector2(fx, seat_y)
 			_draw_seat(seat, tr, t_ids[k])
-			if has_leash and passengers[t_ids[k]] == "goat" and not bailed[t_ids[k]]:
+			if has_leash and _needs_leash(t_ids[k]) and not bailed[t_ids[k]]:
 				_draw_leash(seat, tr, -22.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -1322,12 +1345,18 @@ func _draw_passenger(y_offset: float) -> void:
 		var fx := (left + right) * 0.5 if m == 1 else lerpf(left, right, float(k) / float(m - 1))
 		var seat := Vector2(fx, body_top - 6.0) + off
 		_draw_seat(seat, r, bed[k])
-		if has_leash and passengers[bed[k]] == "goat" and not bailed[bed[k]]:
+		if has_leash and _needs_leash(bed[k]) and not bailed[bed[k]]:
 			_draw_leash(seat, r, body_top)
 	if has_cage and m > 1:
 		# A divider bar between the animals — the divided cage keeping the peace.
 		var bar_x := lerpf(left, right, 0.5)
 		draw_line(Vector2(bar_x, body_top - 22.0) + off, Vector2(bar_x, body_top + 6.0) + off, Color("#4a4f45"), 3.0)
+
+
+func _needs_leash(index: int) -> bool:
+	# Draw a lead on whichever passenger the leash is actually for — the one whose
+	# data requires it — rather than hardcoding the goat, so a new wanderer works too.
+	return "leash" in Animals.get_data(passengers[index]).get("requires", [])
 
 
 func _draw_leash(seat: Vector2, r: float, body_top: float) -> void:
@@ -1594,6 +1623,7 @@ func _reset_run() -> void:
 	veh_ride = vehicle_data.get("ride", 1.0)
 	vehicle_x = 100.0
 	speed = 0.0
+	prev_speed = 0.0
 	fuel = veh_start_fuel
 	body_y = terrain_y(vehicle_x) - REST_HEIGHT
 	cam_y = terrain_y(vehicle_x)
