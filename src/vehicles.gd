@@ -24,7 +24,7 @@ const DATA := {
 	"bicycle": {
 		"name": "Tuk-Tuk", "capacity": 2, "shape": "tuktuk",
 		"max_speed": 205.0, "acceleration": 185.0,
-		"start_fuel": 52.0, "fuel_per_px": 0.011, "load_ref": 24.0,
+		"start_fuel": 52.0, "fuel_per_px": 0.0055, "load_ref": 24.0,
 		"ride": 1.18, "ride_label": "bumpy",
 		"colour": "#3f9d8c", "body_w": 64.0, "body_h": 22.0,
 		"wheel_r": 13.0, "wheel_dx": 27.0,
@@ -32,7 +32,7 @@ const DATA := {
 	"jeep": {
 		"name": "Jeep", "capacity": 4, "shape": "jeep",
 		"max_speed": 260.0, "acceleration": 150.0,
-		"start_fuel": 60.0, "fuel_per_px": 0.012, "load_ref": 44.0,
+		"start_fuel": 60.0, "fuel_per_px": 0.006, "load_ref": 44.0,
 		"ride": 1.0, "ride_label": "steady",
 		"colour": "#d9824b", "body_w": 96.0, "body_h": 32.0,
 		"wheel_r": 16.0, "wheel_dx": 30.0,
@@ -40,7 +40,7 @@ const DATA := {
 	"truck": {
 		"name": "Truck", "capacity": 7, "shape": "truck",
 		"max_speed": 300.0, "acceleration": 112.0,
-		"start_fuel": 88.0, "fuel_per_px": 0.015, "load_ref": 95.0,
+		"start_fuel": 88.0, "fuel_per_px": 0.0075, "load_ref": 95.0,
 		"ride": 0.78, "ride_label": "smooth",
 		"colour": "#8a6d4a", "body_w": 144.0, "body_h": 42.0,
 		"wheel_r": 19.0, "wheel_dx": 46.0,

@@ -65,16 +65,16 @@ Implemented on `main`:
   comfort cues (jolt thud, "about to jump" chirp, a bail hop), lifeline stings
   (munch / vet chime / rescue fanfare / sanctuary chord), UI taps, a result-star
   tally, a soft music bed, and a floating mute toggle. See `src/audio.gd`.
-- Fuel exists but is disabled behind `FUEL_ENABLED` until route choice makes it
-  meaningful.
+- Fuel is a working range meter (`FUEL_ENABLED = true`): distance and load burn it,
+  route stops refuel, and fuel stops show jerry cans that vanish when collected.
 
 Much of the earlier weakness is now addressed: prep is an auto-loaded brief with
 a real route choice on L3 (milestone 1/3), the result screen explains the rating
 and the fix (milestone 2), locked levels tease what's next (milestone 7), and the
 food/vet stops read as felt lifelines with real scenery (milestone 8). The main
 open gaps are vehicle differentiation (milestone 6, parked with the vehicle-art
-ideas), restoring fuel (milestone 10), and — above all — an unfamiliar-player
-phone test (Gate 5) to confirm the loop reads unaided.
+ideas) and — above all — an unfamiliar-player phone test (Gate 5) to confirm the
+loop reads unaided. Fuel is back on (milestone 10, done).
 
 ## Gate 0 — Project boots
 
@@ -231,8 +231,8 @@ routes; the pick feeds the drive via `GameState.loadout_route`.
 
 - [x] Two clearly different valid routes:
   - **Rough shortcut:** 1450px, rough 1.0, no stops — greater comfort risk.
-  - **Safe road:** 2400px, rough 0.6, early feeding stop (later a fuel cost once
-    fuel returns).
+  - **Safe road:** longer, rough 0.6, an early feeding stop and a fuel stop — a
+    gentler ride that trades distance (and thus fuel) for safety.
 - [x] Relevant traits shown alongside the choice — the manifest lists the rabbit
       as "timid" directly above the route buttons, and the brief calls it out.
 - [x] Consequences perceptible in the drive (terrain shape, the food stop, a bail)
@@ -249,10 +249,10 @@ routes; the pick feeds the drive via `GameState.loadout_route`.
 sensible pick, without making the shortcut a trap. Wants a human playtest to
 confirm players read the trade-off unaided.
 
-CAVEAT — honest state: with fuel disabled, the shortcut's only scored edge is
-that its 3★ is faster/shorter; the safe road has no scored *cost* yet, just its
-length. The trade-off is real but completes when fuel returns (milestone 10) and
-prices the long road. Do not over-tune around this now.
+Fuel is now on (milestone 10): the safe road's greater length carries a real fuel
+cost priced against the shortcut, so the long road is no longer "free." The
+trade-off — safety vs distance/fuel vs speed — is now fully scored. Still wants a
+human playtest to confirm players read it unaided.
 
 ### 4. Give every animal one memorable gameplay identity — DONE (2026-07-18)
 
@@ -400,18 +400,23 @@ Code-drawn scenery pass in main.gd (`_draw_sky`/`_draw_clouds`/`_draw_hills`/
 Update (2026-07-18): birds were added after all, at owner request — deterministic
 flocks gliding across the sky (`_draw_birds`), flapping on a free-running clock.
 
-### 10. Restore fuel only after route choice gives it a purpose
+### 10. Restore fuel — DONE
 
-Fuel remains disabled behind `FUEL_ENABLED`.
+`FUEL_ENABLED` is now `true`. Fuel is a range meter: distance and load burn it
+(speed does not), so it stays a *different* decision from comfort (terrain and
+driving). Route stops top it up, and each fuel stop shows red jerry cans on a
+pallet that disappear once the vehicle fuels up (the pallet+sign stay as a place).
 
-- [ ] Keep fuel off while every route automatically passes the fuel stop.
-- [ ] Restore fuel only when the player can knowingly choose a route, load, or
-      vehicle that changes range risk.
-- [ ] Ensure fuel and comfort create different decisions:
-  - weight and distance affect fuel/range;
-  - terrain and driving affect comfort.
-- [ ] Remove fuel permanently if route and load decisions do not make it legible or
-      fun in external play.
+- [x] Enable the mechanic (`FUEL_ENABLED = true`).
+- [x] Add visible fuel cans at fuel stops that vanish when collected (`_draw_fuel_stop`).
+- [x] Rebalance for the 2× lengths: `fuel_per_px` halved on every vehicle so the
+      economy matches the pre-doubling tuning.
+- [x] Give every level refuel access: custom-route levels (3 safe/rough, 5, 10, 12)
+      gained fuel stops; L12 (longest, heaviest) gets two.
+- [x] Verified all 12 levels + both L3 routes finish careful with fuel to spare
+      (tightest reserve L10 ~14%), delivery/stars unchanged from the pre-fuel baseline.
+- [ ] Confirm in external play that the range meter reads as fun, not fiddly;
+      remove again if it doesn't earn its place.
 
 ## Recommended implementation sprint
 

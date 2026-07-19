@@ -56,6 +56,7 @@ const DATA := [
 				"length": 4800, "rough": 0.6, "freq": 1.0, "phase": 120.0,
 				"route": [
 					{"type": "food", "at": 0.3},
+					{"type": "fuel", "at": 0.6},
 					{"type": "sanctuary", "at": 1.0},
 				],
 			},
@@ -64,6 +65,7 @@ const DATA := [
 				"desc": "Half the distance over sharp hills, with one feeding stop halfway. Quicker if you're deft — a timid animal bails if you rush it, but reach the feed in time and it steadies for the run home.",
 				"length": 2900, "rough": 1.25, "freq": 1.1, "phase": 300.0,
 				"route": [
+					{"type": "fuel", "at": 0.28},
 					{"type": "food", "at": 0.5},
 					{"type": "sanctuary", "at": 1.0},
 				],
@@ -83,6 +85,7 @@ const DATA := [
 		"vehicle": "truck", "deliver": ["tortoise", "wombat"], "equipment": ["ramp"],
 		"length": 5200, "rough": 1.0, "freq": 0.95, "phase": 700.0,
 		"route": [
+			{"type": "fuel", "at": 0.3},
 			{"type": "vet", "at": 0.5},
 			{"type": "sanctuary", "at": 1.0},
 		],
@@ -126,6 +129,7 @@ const DATA := [
 		"equipment": ["ramp", "gloves"],
 		"length": 5400, "rough": 1.0, "freq": 0.95, "phase": 700.0,
 		"route": [
+			{"type": "fuel", "at": 0.3},
 			{"type": "vet", "at": 0.55},
 			{"type": "sanctuary", "at": 1.0},
 		],
@@ -146,7 +150,9 @@ const DATA := [
 		"equipment": ["gloves", "ramp", "leash"], "trailer": true,
 		"length": 5800, "rough": 1.35, "freq": 1.05, "phase": 900.0,
 		"route": [
+			{"type": "fuel", "at": 0.25},
 			{"type": "food", "at": 0.48},
+			{"type": "fuel", "at": 0.62},
 			{"type": "vet", "at": 0.85},
 			{"type": "sanctuary", "at": 1.0},
 		],

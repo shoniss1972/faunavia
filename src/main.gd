@@ -2,17 +2,17 @@ extends Control
 
 const TRACK_BUFFER := 160.0          # ground drawn past the sanctuary
 const SPEED_TO_MPH := 0.1            # internal units -> a readable mph (truck tops ~30,
-                                     # a sane pace over hilly wildlife-park ground)
+									 # a sane pace over hilly wildlife-park ground)
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FUEL_PICKUP_AMOUNT := 45.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
 
-# Fuel is temporarily disabled while other things are fixed. When false: no drain,
-# never runs out, no fuel readout, and fuel stops are omitted from routes. Flip to
-# true to bring the whole fuel mechanic back — no other changes needed.
-const FUEL_ENABLED := false
+# The fuel mechanic. When false: no drain, never runs out, no fuel readout, and
+# fuel stops are omitted from routes. When true: distance burns fuel (heavier loads
+# faster), the readout shows a range meter, and fuel stops top it up.
+const FUEL_ENABLED := true
 
 const CRITTER_ART_DIR := "res://assets/animals/"
 
@@ -549,13 +549,12 @@ func _draw() -> void:
 
 	for node in route:
 		var style: Dictionary = NODE_STYLE.get(node["type"], NODE_STYLE["fuel"])
-		# The food stall, vet, and sanctuary are places — they stay as the vehicle
-		# passes through. Only a collectible fuel can vanishes once taken. The food's
-		# veg, though, is eaten: the stall stays but its carrots/lettuce are cleared
-		# once used (handled in the food draw via `used`).
+		# Every stop is a place — the sign, stall, pump, or building all stay put as
+		# the vehicle passes through. What's *collected* is what disappears once used:
+		# the food's veg is eaten, the fuel cans are hauled aboard. Both are handled
+		# inside their own draw via `used`; the marker itself always stays.
 		var used: bool = nodes_used.has(node["x"])
-		var still_visible: bool = node["type"] != "fuel" or not used
-		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), still_visible, used)
+		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), true, used)
 	_draw_trailer()
 	_draw_vehicle()
 
@@ -707,6 +706,9 @@ func _draw_marker(world_x: float, node_type: String, label_text: String, marker_
 		"vet":
 			_draw_signpost(label_text, marker_color, font)
 			_draw_vet_stop()
+		"fuel":
+			_draw_signpost(label_text, marker_color, font)
+			_draw_fuel_stop(used)
 		_:
 			_draw_signpost(label_text, marker_color, font)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -754,6 +756,30 @@ func _draw_carrot(p: Vector2) -> void:
 	draw_line(ftop, ftop + Vector2(-3, -6), Color("#4e8f3a"), 1.5)
 	draw_line(ftop, ftop + Vector2(0, -7), Color("#4e8f3a"), 1.5)
 	draw_line(ftop, ftop + Vector2(3, -6), Color("#4e8f3a"), 1.5)
+
+
+func _draw_fuel_stop(collected: bool) -> void:
+	# A little pallet at the foot of the FUEL sign holding jerry cans. The pallet
+	# stays put; the cans are the pickup, so they vanish once the vehicle fuels up.
+	draw_rect(Rect2(-30, -6, 60, 6), Color("#6f5a3c"), true)              # pallet
+	draw_line(Vector2(-30, -3), Vector2(30, -3), Color("#54462e"), 1.5)
+	if collected:
+		return
+	_draw_fuel_can(Vector2(-13, -6))
+	_draw_fuel_can(Vector2(9, -6))
+
+
+func _draw_fuel_can(base: Vector2) -> void:
+	# A red jerry can standing on the pallet: body, spout cap, handle, and an X
+	# brace so it reads as a fuel container rather than a plain box. `base` is the
+	# bottom-centre where the can sits.
+	var body := Color("#c0392b")
+	draw_rect(Rect2(base.x - 7, base.y - 19, 14, 19), body, true)         # body
+	draw_rect(Rect2(base.x - 5, base.y - 23, 10, 4), Color("#8f271c"), true)  # cap plate
+	draw_rect(Rect2(base.x + 2, base.y - 26, 3, 4), Color("#7a2018"), true)   # spout
+	draw_line(base + Vector2(-4, -23), base + Vector2(4, -23), Color("#8f271c"), 2.0)  # handle
+	draw_line(base + Vector2(-6, -17), base + Vector2(6, -3), Color("#e08b80"), 1.4)   # brace
+	draw_line(base + Vector2(6, -17), base + Vector2(-6, -3), Color("#e08b80"), 1.4)
 
 
 func _draw_vet_stop() -> void:
