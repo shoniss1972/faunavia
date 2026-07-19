@@ -205,9 +205,10 @@ const DATA := [
 		"vehicle": "jeep", "deliver": ["capybara"], "equipment": [],
 		"length": 6800, "rough": 0.6, "freq": 1.0, "phase": 90.0,
 		"route": [
-			{"type": "fuel", "at": 0.28},
-			{"type": "food", "at": 0.5},
-			{"type": "fuel", "at": 0.72},
+			{"type": "fuel", "at": 0.25},
+			{"type": "fuel", "at": 0.5},
+			{"type": "food", "at": 0.6},
+			{"type": "fuel", "at": 0.75},
 			{"type": "sanctuary", "at": 1.0},
 		],
 		"hook": "A capybara that nothing can rattle — but it drinks fuel.",
