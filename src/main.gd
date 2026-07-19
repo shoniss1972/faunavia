@@ -3,6 +3,8 @@ extends Control
 const TRACK_BUFFER := 160.0          # ground drawn past the sanctuary
 const SPEED_TO_MPH := 0.1            # internal units -> a readable mph (truck tops ~30,
 									 # a sane pace over hilly wildlife-park ground)
+const SPEEDO_MAX_MPH := 32.0        # full-scale on the speedometer dial (past the truck's ~30)
+const DISTANCE_M_PER_PX := 0.25     # world px -> a readable "metres to the next pump"
 const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
@@ -171,6 +173,9 @@ const RELIEF_TIME := 1.8        # how long the crew visibly perks up after a sto
 
 func _ready() -> void:
 	set_process(true)
+	# Speed and fuel are shown on the drawn dashboard gauges, so the old digit
+	# label is hidden (it collapses out of the status panel when not visible).
+	fuel_label.visible = false
 	Audio.start_music()
 	_reset_run()
 
@@ -240,22 +245,9 @@ func _process(delta: float) -> void:
 	_update_comfort(delta)
 	_update_audio(delta)
 
-	if FUEL_ENABLED:
-		fuel_label.text = "Fuel: %d%%   %d mph" % [roundi(fuel), roundi(speed * SPEED_TO_MPH)]
-		_update_fuel_colour()
-	else:
-		fuel_label.text = "%d mph" % roundi(speed * SPEED_TO_MPH)
+	# Speed and fuel now read off the drawn dashboard gauges (_draw_dashboard),
+	# not a digit label — so the FuelLabel stays hidden (set up in _ready).
 	queue_redraw()
-
-
-func _update_fuel_colour() -> void:
-	# Warn as the range meter runs low, so the fuel stakes read at a glance.
-	var col := Color("#e8ede4")
-	if fuel <= 15.0:
-		col = Color("#e06a4a")
-	elif fuel <= 30.0:
-		col = Color("#e8b84a")
-	fuel_label.add_theme_color_override("font_color", col)
 
 
 func _update_comfort(delta: float) -> void:
@@ -567,6 +559,92 @@ func _draw() -> void:
 		_draw_marker(node["x"], node["type"], style["label"], Color(style["colour"]), true, used)
 	_draw_trailer()
 	_draw_vehicle()
+	_draw_dashboard()
+
+
+func _draw_dashboard() -> void:
+	# A compact driving dashboard in the bottom-right, above the control bar: a
+	# speedometer and a fuel gauge (dials, not digits) plus a slim "next fuel"
+	# proximity strip. Drawn last, in screen space (identity transform), so it sits
+	# over the world like a HUD.
+	if not FUEL_ENABLED:
+		return
+	var font := ThemeDB.fallback_font
+	var pad := 18.0
+	var panel_w := 258.0
+	var panel_h := 140.0
+	var ox := size.x - panel_w - pad
+	var oy := size.y - 150.0 - panel_h - 10.0   # clear of the controls bar (top at -150)
+
+	# Panel backdrop — translucent so the road still reads behind it.
+	draw_rect(Rect2(ox, oy, panel_w, panel_h), Color(0.10, 0.13, 0.12, 0.60), true)
+	draw_rect(Rect2(ox, oy, panel_w, panel_h), Color(0.85, 0.88, 0.82, 0.20), false)
+
+	var r := 38.0
+	var dial_y := oy + 46.0
+	var mph := speed * SPEED_TO_MPH
+	_draw_gauge(Vector2(ox + 62.0, dial_y), r, mph, SPEEDO_MAX_MPH, "MPH", Color("#8fd0c4"), false)
+	_draw_gauge(Vector2(ox + panel_w - 62.0, dial_y), r, fuel, 100.0, "FUEL", Color("#7fc98a"), true)
+
+	_draw_next_fuel(ox + 16.0, oy + panel_h - 15.0, panel_w - 32.0, font)
+
+
+func _draw_gauge(c: Vector2, radius: float, value: float, vmax: float, label: String, accent: Color, warn_low: bool) -> void:
+	# A 270-degree dial opening at the bottom, with a track arc, a coloured value
+	# arc, a needle, the value in the face, and a label beneath. When warn_low, the
+	# value colour shifts amber then red as it nears empty (used for fuel).
+	var font := ThemeDB.fallback_font
+	var p := clampf(value / vmax, 0.0, 1.0)
+	var a0 := 0.75 * PI
+	var a1 := 2.25 * PI
+	var av := lerpf(a0, a1, p)
+	draw_arc(c, radius, a0, a1, 40, Color(0, 0, 0, 0.40), 6.0)
+	var col := accent
+	if warn_low and p < 0.22:
+		col = Color("#e0552e")
+	elif warn_low and p < 0.45:
+		col = Color("#e0a92e")
+	if av > a0:
+		draw_arc(c, radius, a0, av, 40, col, 6.0)
+	# Needle.
+	var tip := c + Vector2(cos(av), sin(av)) * (radius - 5.0)
+	draw_line(c, tip, Color("#f2efe6"), 2.5)
+	draw_circle(c, 4.5, Color("#cfd4c8"))
+	# Value in the dial face.
+	var num := str(roundi(value))
+	var nsz := font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, 20)
+	draw_string(font, c + Vector2(-nsz.x * 0.5, radius * 0.5 + 6.0), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#f2efe6"))
+	# Label under the dial.
+	var lsz := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	draw_string(font, c + Vector2(-lsz.x * 0.5, radius + 20.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#c7cdbf"))
+
+
+func _draw_next_fuel(x: float, y: float, w: float, font: Font) -> void:
+	# A proximity strip to the next pump ahead: a fuel glyph, a bar that fills as
+	# you close in, and the distance in metres. Once every pump is behind you it
+	# points at the sanctuary instead, so the strip is never blank.
+	var d := -1.0
+	for node in route:
+		if node["type"] == "fuel" and node["x"] > vehicle_x and not nodes_used.has(node["x"]):
+			var nd: float = node["x"] - vehicle_x
+			if d < 0.0 or nd < d:
+				d = nd
+	var to_sanctuary := d < 0.0
+	if to_sanctuary:
+		d = maxf(track_len - vehicle_x, 0.0)
+	var tag := "SANCTUARY" if to_sanctuary else "NEXT FUEL"
+	var metres := roundi(d * DISTANCE_M_PER_PX / 10.0) * 10
+	# Bar fills as the target nears (full within ~1500px), so it reads as "closing in".
+	var closeness := clampf(1.0 - d / 1500.0, 0.0, 1.0)
+	var bar_x := x + 74.0
+	var bar_w := w - 74.0 - 62.0
+	draw_string(font, Vector2(x, y + 5.0), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#c7cdbf"))
+	draw_rect(Rect2(bar_x, y - 6.0, bar_w, 8.0), Color(0, 0, 0, 0.40), true)
+	var fill_col := Color("#efb64d") if not to_sanctuary else Color("#8fbf95")
+	draw_rect(Rect2(bar_x, y - 6.0, bar_w * closeness, 8.0), fill_col, true)
+	var dtxt := "%dm" % metres
+	var dsz := font.get_string_size(dtxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	draw_string(font, Vector2(x + w - dsz.x, y + 5.0), dtxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#e8ede4"))
 
 
 func _rand01(seed_val: int) -> float:
@@ -1281,6 +1359,5 @@ func _reset_run() -> void:
 	drive_pressed = false
 	brake_pressed = false
 	finished = false
-	fuel_label.text = ("Fuel: %d%%   0 mph" % roundi(veh_start_fuel)) if FUEL_ENABLED else "0 mph"
 	message_label.text = "Press DRIVE to coax %s aboard onto the %s." % [_crew_label(), Vehicles.display_name(GameState.current_vehicle())]
 	queue_redraw()
