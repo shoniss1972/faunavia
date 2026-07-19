@@ -49,6 +49,7 @@ const CRITTER_ART := {
 	"tortoise": {"scale": 3.2, "offset": Vector2(-0.1, 0.05)},
 	"parrot": {"scale": 3.3, "offset": Vector2(-0.05, -0.3)},
 	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
+	"kiwi": {"scale": 3.3, "offset": Vector2(0.0, -0.3)},   # placement for real art when it lands
 }
 
 # Levels without a bespoke route get a length-scaled default (pumps spaced to the
@@ -143,10 +144,19 @@ const COMFORT_PANIC := 18.0            # at or below this it is on the verge of 
 # sensitive to `jolt` only, so these do not affect them.
 const COMFORT_SPEED_RATIO := 0.6       # speed/max above this stresses a speed-shy animal
 const COMFORT_SPEED_GAIN := 150.0
-const COMFORT_ACCEL_THRESHOLD := 120.0 # |Δspeed|/s above this reads as an abrupt start/stop
+# The `accel` input is really "jerky stops": holding the throttle is always a hard
+# launch (the controls are on/off), so the abruptness a player actually chooses is
+# how hard they BRAKE. Gentle coasting (drag ~52) is calm; slamming the brakes
+# (~260) is not. So this input reads deceleration above a threshold set between the
+# two — a Kiwi wants you to coast down, not stamp on the brakes.
+const COMFORT_ACCEL_THRESHOLD := 120.0 # deceleration (px/s²) above this reads as a jerky stop
 const COMFORT_ACCEL_GAIN := 0.4
 const COMFORT_AIRTIME_THRESHOLD := 4.0 # px of hop above this reads as airtime/launch
 const COMFORT_AIRTIME_GAIN := 2.0
+# `social` unease: per disturbing neighbour aboard (an animal in this one's
+# "disturbed_by" list), in the shared over-threshold units, before sensitivity. A
+# divided cage keeps them apart and cancels it — the second valid plan.
+const COMFORT_SOCIAL_UNIT := 5.0
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
@@ -308,14 +318,18 @@ func _update_comfort(delta: float) -> void:
 	# current animals are sensitive to `jolt` only, so this reproduces the old model
 	# exactly for them; new species opt into the other inputs via their data.
 	var speed_ratio := speed / maxf(veh_max_speed, 1.0)
-	var accel_mag := absf(speed - prev_speed) / maxf(delta, 0.0001)
+	var decel := (prev_speed - speed) / maxf(delta, 0.0001)   # +ve when slowing down
 	prev_speed = speed
+	# A scripted stop — a vet/pickup pause, or the instant halt at the sanctuary —
+	# brakes the rig for us; that isn't the player being jerky, so it doesn't feed
+	# the "jerky stops" input.
+	var brake_stress := 0.0 if (stop_pause_t > 0.0 or finished) else maxf(decel - COMFORT_ACCEL_THRESHOLD, 0.0) * COMFORT_ACCEL_GAIN
+	# Ride stress is shared by the whole crew; `social` is per-passenger (below).
 	var stress := {
 		"jolt": maxf(absf(body_vy) * veh_ride - COMFORT_JOLT_THRESHOLD, 0.0),
 		"speed": maxf(speed_ratio - COMFORT_SPEED_RATIO, 0.0) * COMFORT_SPEED_GAIN,
-		"accel": maxf(accel_mag - COMFORT_ACCEL_THRESHOLD, 0.0) * COMFORT_ACCEL_GAIN,
+		"accel": brake_stress,
 		"airtime": maxf(veh_hop - COMFORT_AIRTIME_THRESHOLD, 0.0) * COMFORT_AIRTIME_GAIN,
-		"social": 0.0,   # driven by the relationships table (added with the new cast)
 	}
 	for i in passengers.size():
 		if bailed[i]:
@@ -328,6 +342,7 @@ func _update_comfort(delta: float) -> void:
 		for src in stress:
 			if stress[src] > 0.0:
 				drain += stress[src] * Animals.comfort_sens(id, src)
+		drain += _social_stress(i) * Animals.comfort_sens(id, "social")
 		if drain > 0.0:
 			comforts[i] -= drain * COMFORT_LOSS_RATE * delta
 		else:
@@ -348,6 +363,24 @@ func _update_comfort(delta: float) -> void:
 			states[i] = "delighted"
 		else:
 			states[i] = "content"
+
+
+func _social_stress(index: int) -> float:
+	# Unease from a disliked neighbour aboard (this animal's "disturbed_by" list). A
+	# divided cage keeps them apart and cancels it — so a level with a bad pairing
+	# offers two plans: pack the cage (capacity cost) or drive to keep them calm.
+	if has_cage:
+		return 0.0
+	var dislikes: Array = Animals.get_data(passengers[index]).get("disturbed_by", [])
+	if dislikes.is_empty():
+		return 0.0
+	var s := 0.0
+	for j in passengers.size():
+		if j == index or bailed[j]:
+			continue
+		if passengers[j] in dislikes:
+			s += COMFORT_SOCIAL_UNIT
+	return s
 
 
 func _update_audio(delta: float) -> void:
@@ -1519,6 +1552,9 @@ func _draw_critter_shapes(center: Vector2, radius: float, id: String, mood: Stri
 			draw_line(center + Vector2(2, -11) * s, center + Vector2(3, -24) * s, colour.darkened(0.15), 3.0 * s)
 		"tortoise":
 			draw_circle(center + Vector2(0, 8) * s, radius * 1.2, colour.darkened(0.32))
+		"kiwi":
+			# A dumpy, round-bodied flightless bird — no ears, a plump body hump.
+			draw_circle(center + Vector2(0, 9) * s, radius * 0.95, colour.darkened(0.05))
 		_:
 			# Wombat: small round ears.
 			draw_circle(center + Vector2(-10, -10) * s, 5.0 * s, colour)
@@ -1531,6 +1567,9 @@ func _draw_critter_shapes(center: Vector2, radius: float, id: String, mood: Stri
 		draw_colored_polygon(PackedVector2Array([center + Vector2(5, 0) * s, center + Vector2(15, 3) * s, center + Vector2(5, 7) * s]), Color("#e8a63a"))
 	elif id == "fox":
 		draw_circle(center + Vector2(0, 6) * s, 3.5 * s, colour.lightened(0.4))
+	elif id == "kiwi":
+		# The signature: a long, slender, slightly drooping beak.
+		draw_line(center + Vector2(4, 1) * s, center + Vector2(21, 8) * s, Color("#a9825f"), 2.6 * s)
 
 	_draw_face(center, s, mood)
 

@@ -1,10 +1,12 @@
 class_name Levels
 extends RefCounted
 
-# The active campaign is the full TWELVE-mission set. The first five are the
-# refined Gate 5 test path (each asks one distinct question and has its own
-# terrain identity); levels 6–12 grow the cast, gear, trailer, and route stops
-# toward the grand convoy:
+# The campaign is expanding from twelve toward ~24 missions (TODO: international
+# animal campaign). Levels 1–12 are the original set — the first five are the
+# refined Gate 5 test path (each asks one distinct question and has its own terrain
+# identity); levels 6–12 grow the cast, gear, trailer, and route stops toward the
+# grand convoy. Levels 13+ are the international chapters, each introducing one new
+# animal in a focused mission and then a relationship mission (13–14: the NZ kiwi):
 #   1 First Rescue      — teach the loop: coax aboard, drive, arrive (wombat, trike)
 #   2 Nervous Passenger — rough driving has a consequence (timid rabbit bails)
 #   3 Which Road?       — a real route choice (safe detour vs rough shortcut)
@@ -172,6 +174,31 @@ const DATA := [
 		],
 		"hook": "Five animals, truck and trailer — the big one.",
 		"brief": "The whole menagerie: five animals, truck and trailer, every kind of gear. A feeding stop and a vet break the long, rough haul — use them.",
+	},
+	# --- International expansion, Chapter: New Zealand (kiwi) — TODO Phase B ---
+	# The kiwi introduces a wholly new way to drive: it barely notices bumps but
+	# frets at hard braking (coast to slow, don't stamp the pedal) and at the parrot.
+	{
+		"title": "Level 13 — Night Shift",
+		"vehicle": "jeep", "deliver": ["kiwi"], "equipment": [],
+		"length": 6400, "rough": 0.8, "freq": 1.0, "phase": 210.0,
+		"hook": "A wary kiwi on the night road — no sudden stops.",
+		"brief": "Meet the kiwi, a nervy night traveller. It shrugs off the bumps that spook other animals — but slam the brakes and it panics. Ease off and let it coast to slow down; don't stamp on the pedal.",
+	},
+	{
+		"title": "Level 14 — Keep It Down",
+		"vehicle": "jeep", "deliver": ["kiwi", "parrot"], "equipment": [],
+		"length": 6000, "rough": 0.7, "freq": 1.0, "phase": 480.0,
+		"route": [
+			{"type": "food", "at": 0.25},
+			{"type": "fuel", "at": 0.35},
+			{"type": "vet", "at": 0.5},
+			{"type": "fuel", "at": 0.68},
+			{"type": "food", "at": 0.8},
+			{"type": "sanctuary", "at": 1.0},
+		],
+		"hook": "The kiwi can't stand the parrot's chatter.",
+		"brief": "The parrot's endless chatter frays the kiwi's nerves the whole way. Keep your braking gentle AND lean on the vet stop to settle the kiwi — the parrot won't quiet down on its own.",
 	},
 ]
 

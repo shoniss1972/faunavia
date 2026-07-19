@@ -13,6 +13,9 @@ extends RefCounted
 #   colour       — fur/feather colour drawn in the cab
 #   incompatible — ids this animal cannot ride beside without a divided cage
 #   requires     — equipment ids that must be aboard to carry this animal
+#   disturbed_by — ids whose mere presence aboard frets this animal (the `social`
+#                  comfort input): a soft, drive-around problem, not a hard block
+#                  like `incompatible`. A divided cage cancels it (see main.gd).
 #   comfort      — per-input comfort SENSITIVITY, the data behind the drive's
 #                  comfort model (main.gd). Each key is a distinct source of unease
 #                  and its value multiplies how fast that source drains this animal
@@ -62,6 +65,16 @@ const DATA := {
 		"personality": "a stubborn wanderer; keep it leashed",
 		"colour": "#b0a89a", "incompatible": [], "requires": ["leash"],
 		"comfort": {"jolt": 0.9},
+	},
+	# --- International expansion: New Zealand flagship (TODO Phase B) ---
+	"kiwi": {
+		"name": "Kiwi", "size": 1, "weight": 3.0, "temperament": "wary",
+		"personality": "brake gently — sudden stops rattle it; hates the parrot's racket",
+		"colour": "#6b5844", "incompatible": [], "requires": [],
+		# Barely notices bumps (low jolt), but frets at hard braking (accel) and at
+		# the parrot's presence (social) — a wholly different way to drive.
+		"comfort": {"jolt": 0.2, "accel": 1.5, "social": 1.0},
+		"disturbed_by": ["parrot"],
 	},
 }
 
