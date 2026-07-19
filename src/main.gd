@@ -1233,7 +1233,11 @@ func _draw_passenger(y_offset: float) -> void:
 	var body_top := 4.0 - bh
 	var off := Vector2(0.0, y_offset)
 	if total == 1:
-		_draw_seat(Vector2(-bw * 0.01, body_top - 12.0) + off, minf(bh * SOLO_HEAD, MAX_HEAD), 0)
+		# A lone passenger sits centred in its own bed (between the back edge and the
+		# front seat line), so it clears the cab/pod ahead of it rather than being
+		# drawn over — the tuk-tuk's pod starts well forward, so centre it there too.
+		var solo_x := (-bw * SEAT_BACK + bw * _seat_front()) * 0.5
+		_draw_seat(Vector2(solo_x, body_top - 11.0) + off, minf(bh * SOLO_HEAD, MAX_HEAD), 0)
 		return
 	# Heads sit wholly between the bed's back edge and the cab, so the cab frame
 	# never crosses a face. Bailed animals keep their slot (drawn leaping away)

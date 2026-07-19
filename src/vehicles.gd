@@ -25,6 +25,8 @@ const DATA := {
 		"name": "Tuk-Tuk", "capacity": 2, "shape": "tuktuk",
 		"max_speed": 205.0, "acceleration": 185.0,
 		"start_fuel": 100.0, "fuel_per_px": 0.0055, "load_ref": 24.0,
+		"seat_front": 0.06,   # driver pod sits well forward, so keep the bed behind it
+
 		"ride": 1.18, "ride_label": "bumpy",
 		"colour": "#3f9d8c", "body_w": 64.0, "body_h": 22.0,
 		"wheel_r": 13.0, "wheel_dx": 27.0,
