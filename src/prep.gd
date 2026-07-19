@@ -112,7 +112,7 @@ func _build_brief() -> void:
 	var back_button := Button.new()
 	back_button.custom_minimum_size = Vector2(0, 96)
 	back_button.add_theme_font_size_override("font_size", 22)
-	back_button.text = "← Levels"
+	back_button.text = "< Levels"
 	back_button.pressed.connect(_on_back)
 	buttons.add_child(back_button)
 
@@ -157,7 +157,7 @@ func _on_route_toggled(pressed: bool, index: int) -> void:
 func _refresh_route_buttons() -> void:
 	for i in route_buttons.size():
 		var opt: Dictionary = route_options[i]
-		var mark := "●  " if i == chosen_route else "○  "
+		var mark := "(o)  " if i == chosen_route else "( )  "
 		route_buttons[i].text = "%s%s — %s" % [mark, opt["label"], opt["desc"]]
 
 

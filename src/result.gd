@@ -72,7 +72,10 @@ func _build() -> void:
 	var column := _make_root_column()
 
 	_add_label(column, Levels.get_level(level_index).get("title", "Rescue"), 20, MUTED)
-	_add_label(column, "★".repeat(earned) + "☆".repeat(3 - earned), 52, STAR_GOLD)
+	var star_row: Control = preload("res://src/star_row.gd").new()
+	star_row.setup(earned, 3, 22.0, STAR_GOLD)
+	star_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(star_row)
 	_add_label(column, _headline(earned, failed), 26, BAD_RED if failed else TEXT_DARK)
 
 	_add_label(column, "— WHO ARRIVED —", 15, MUTED)
@@ -115,7 +118,7 @@ func _build() -> void:
 		var to_levels := Button.new()
 		to_levels.custom_minimum_size = Vector2(0, 96)
 		to_levels.add_theme_font_size_override("font_size", 22)
-		to_levels.text = "← Levels"
+		to_levels.text = "< Levels"
 		to_levels.pressed.connect(_on_levels)
 		buttons.add_child(to_levels)
 
@@ -123,7 +126,7 @@ func _build() -> void:
 		retry_primary.custom_minimum_size = Vector2(0, 96)
 		retry_primary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		retry_primary.add_theme_font_size_override("font_size", 26)
-		retry_primary.text = "↺ Retry"
+		retry_primary.text = "Retry"
 		retry_primary.pressed.connect(_on_retry)
 		buttons.add_child(retry_primary)
 		return
@@ -131,7 +134,7 @@ func _build() -> void:
 	var retry := Button.new()
 	retry.custom_minimum_size = Vector2(0, 96)
 	retry.add_theme_font_size_override("font_size", 22)
-	retry.text = "↺ Retry"
+	retry.text = "Retry"
 	retry.pressed.connect(_on_retry)
 	buttons.add_child(retry)
 
@@ -140,10 +143,10 @@ func _build() -> void:
 	forward.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	forward.add_theme_font_size_override("font_size", 26)
 	if _next_available():
-		forward.text = "Next Mission →"
+		forward.text = "Next Mission >"
 		forward.pressed.connect(_on_next)
 	else:
-		forward.text = "← Levels"
+		forward.text = "< Levels"
 		forward.pressed.connect(_on_levels)
 	buttons.add_child(forward)
 
@@ -213,7 +216,7 @@ func _saved_note() -> String:
 	var saved: Array = result.get("saved_by_stop", [])
 	if saved.is_empty():
 		return ""
-	return "🥕 A rest stop steadied %s just before they bolted." % _name_list(saved)
+	return "A rest stop steadied %s just before they bolted." % _name_list(saved)
 
 
 func _teaser() -> String:

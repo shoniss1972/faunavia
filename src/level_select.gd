@@ -38,11 +38,11 @@ func _build() -> void:
 	margin.add_child(column)
 
 	_add_label(column, "Wildlife Rescue", 30)
-	_add_label(column, "★ %d / %d    ·    deliver · keep them calm · thrill them" % [
+	_add_label(column, "%d / %d stars    ·    deliver · keep them calm · thrill them" % [
 		GameState.total_stars(), Levels.count() * 3], 17, STAR_GOLD)
 
 	if GameState.last_earned >= 0:
-		_add_label(column, "Last rescue: %s earned!" % _stars_str(GameState.last_earned), 18, STAR_GOLD)
+		_add_label(column, "Last rescue: %d of 3 stars!" % GameState.last_earned, 18, STAR_GOLD)
 		GameState.last_earned = -1
 
 	var grid := GridContainer.new()
@@ -63,13 +63,21 @@ func _build() -> void:
 		btn.disabled = not unlocked
 		var lvl: Dictionary = Levels.get_level(i)
 		if unlocked:
-			btn.text = "%s\n%s" % [lvl["title"], _stars_str(int(GameState.stars[i]))]
+			btn.text = lvl["title"]
 			btn.pressed.connect(_on_level_chosen.bind(i))
+			# Drawn stars along the bottom of the button (glyphs don't render on iOS).
+			var sr: Control = preload("res://src/star_row.gd").new()
+			sr.setup(int(GameState.stars[i]), 3, 9.0, STAR_GOLD)
+			sr.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+			sr.offset_top = -34.0
+			sr.offset_bottom = -8.0
+			sr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			btn.add_child(sr)
 		else:
 			# A locked level teases its new wrinkle instead of a bare padlock, so the
 			# player has a reason to want the next mission (milestone 7).
 			var hook: String = lvl.get("hook", "")
-			btn.text = "🔒 %s\n%s" % [lvl["title"], hook] if hook != "" else "%s\n🔒 Locked" % lvl["title"]
+			btn.text = "%s\n%s" % [lvl["title"], hook] if hook != "" else "%s\nLocked" % lvl["title"]
 		grid.add_child(btn)
 
 	var reset := Button.new()
@@ -78,10 +86,6 @@ func _build() -> void:
 	reset.text = "Reset progress"
 	reset.pressed.connect(_on_reset)
 	column.add_child(reset)
-
-
-func _stars_str(n: int) -> String:
-	return "★".repeat(n) + "☆".repeat(3 - n)
 
 
 func _on_level_chosen(index: int) -> void:

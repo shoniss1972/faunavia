@@ -21,7 +21,7 @@ var _clips := {}                          # name -> AudioStream (procedural or f
 var _voices := {}                         # animal id -> voice AudioStream (optional)
 var _engine_shape := ""
 var muted := false
-var _mute_button: Button
+var _mute_button: Control
 
 
 func _ready() -> void:
@@ -51,6 +51,7 @@ func _ready() -> void:
 
 	_build_mute_button()
 	set_muted(muted)
+	set_process_input(true)
 
 
 # ---- public API ------------------------------------------------------------
@@ -65,6 +66,31 @@ func play(clip_name: String, volume_db := -8.0, pitch := 1.0) -> void:
 	p.volume_db = volume_db
 	p.pitch_scale = pitch
 	p.play()
+
+
+var _audio_unlocked := false
+
+
+func _input(event: InputEvent) -> void:
+	# Web browsers keep the audio context suspended until the first real user
+	# gesture, so anything started at load-in (the music bed) comes out silent even
+	# though it reports as playing. On the first tap/click/key, re-assert the music
+	# now that audio is unlocked. Harmless on desktop. Runs once.
+	if _audio_unlocked:
+		return
+	var pressed := false
+	if event is InputEventMouseButton:
+		pressed = event.pressed
+	elif event is InputEventScreenTouch:
+		pressed = event.pressed
+	elif event is InputEventKey:
+		pressed = event.pressed
+	if not pressed:
+		return
+	_audio_unlocked = true
+	if _music and _music.stream:
+		_music.stop()
+		_music.play()
 
 
 func start_music() -> void:
@@ -125,7 +151,7 @@ func set_muted(m: bool) -> void:
 	muted = m
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), muted)
 	if _mute_button:
-		_mute_button.text = "🔇" if muted else "🔊"
+		_mute_button.set_muted(muted)
 
 
 # ---- mute button -----------------------------------------------------------
@@ -134,17 +160,13 @@ func _build_mute_button() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
-	_mute_button = Button.new()
-	_mute_button.text = "🔊"
-	_mute_button.focus_mode = Control.FOCUS_NONE
-	_mute_button.add_theme_font_size_override("font_size", 22)
+	_mute_button = preload("res://src/mute_button.gd").new()
 	_mute_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_mute_button.offset_left = -60.0
 	_mute_button.offset_top = 8.0
 	_mute_button.offset_right = -8.0
 	_mute_button.offset_bottom = 52.0
-	_mute_button.modulate = Color(1, 1, 1, 0.72)
-	_mute_button.pressed.connect(toggle_mute)
+	_mute_button.toggled.connect(toggle_mute)
 	layer.add_child(_mute_button)
 
 
