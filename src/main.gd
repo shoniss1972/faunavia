@@ -49,7 +49,7 @@ const CRITTER_ART := {
 	"tortoise": {"scale": 3.2, "offset": Vector2(-0.1, 0.05)},
 	"parrot": {"scale": 3.3, "offset": Vector2(-0.05, -0.3)},
 	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
-	"kiwi": {"scale": 3.3, "offset": Vector2(0.0, -0.3)},   # placement for real art when it lands
+	"kiwi": {"scale": 3.4, "offset": Vector2(0.0, -0.28)},   # body-dominant art: keep the head+beak clear of the bed frame
 }
 
 # Levels without a bespoke route get a length-scaled default (pumps spaced to the

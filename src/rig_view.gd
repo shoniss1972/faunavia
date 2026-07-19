@@ -27,6 +27,7 @@ const CRITTER_ART := {
 	"tortoise": {"scale": 3.2, "offset": Vector2(-0.1, 0.05)},
 	"parrot": {"scale": 3.3, "offset": Vector2(-0.05, -0.3)},
 	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
+	"kiwi": {"scale": 3.4, "offset": Vector2(0.0, -0.28)},
 }
 const CRITTER_ART_DIR := "res://assets/animals/"
 
