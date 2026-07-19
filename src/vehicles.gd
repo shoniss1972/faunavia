@@ -43,6 +43,8 @@ const DATA := {
 		"name": "Truck", "capacity": 7, "shape": "truck",
 		"max_speed": 300.0, "acceleration": 112.0,
 		"start_fuel": 100.0, "fuel_per_px": 0.007, "load_ref": 95.0,
+		"seat_front": 0.15,   # cab wall begins at body 0.18, so stop the crew short of it
+
 		"ride": 0.78, "ride_label": "smooth",
 		"colour": "#8a6d4a", "body_w": 144.0, "body_h": 42.0,
 		"wheel_r": 19.0, "wheel_dx": 46.0,
