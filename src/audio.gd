@@ -87,6 +87,13 @@ func boarded(ids: Array) -> void:
 			get_tree().create_timer(when).timeout.connect(func(): play_voice(id, -7.0))
 
 
+# Per-shape engine trim (dB) to even out the supplied loops against the tuk-tuk.
+const ENGINE_GAIN := {
+	"truck": 5.0,
+	"jeep": 5.0,
+}
+
+
 func engine(speed: float, max_speed: float, shape: String) -> void:
 	# Keep a looping motor tone under the vehicle, its pitch and loudness rising
 	# with speed. Each vehicle shape has its own timbre so they sound as distinct
@@ -99,10 +106,9 @@ func engine(speed: float, max_speed: float, shape: String) -> void:
 		_engine.play()
 	var t := clampf(speed / maxf(max_speed, 1.0), 0.0, 1.0)
 	_engine.pitch_scale = 0.7 + t * 1.15
-	# The truck's low motor tone gets buried under the music bed, so lift it a few dB
-	# above the others so its engine reads clearly.
-	var shape_gain := 5.0 if shape == "truck" else 0.0
-	_engine.volume_db = lerpf(-26.0, -10.0, t) + shape_gain
+	# Even out the supplied engine loops: the truck and jeep recordings both came in
+	# quieter than the tuk-tuk, so lift them a few dB to match.
+	_engine.volume_db = lerpf(-26.0, -10.0, t) + ENGINE_GAIN.get(shape, 0.0)
 
 
 func stop_engine() -> void:
