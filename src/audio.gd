@@ -184,9 +184,12 @@ func _find_audio(base: String) -> AudioStream:
 
 
 func _set_loop(res: AudioStream) -> void:
-	if res is AudioStreamOggVorbis or res is AudioStreamMP3:
+	# Route by which loop property the stream actually has, not by class — an
+	# imported .mp3/.ogg exposes `loop`, a WAV exposes `loop_mode`. (Class checks
+	# proved unreliable for the imported MP3.)
+	if "loop" in res:
 		res.loop = true
-	elif res is AudioStreamWAV:
+	elif "loop_mode" in res:
 		# Loop the whole sample. loop_end is in frames; derive it from the true
 		# length and rate so it's correct regardless of the imported format (PCM,
 		# QOA, etc.) rather than guessing from the byte count.
