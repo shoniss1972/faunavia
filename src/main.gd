@@ -154,6 +154,7 @@ var ever_annoyed: Array[bool] = []    # did this animal ever drop to annoyed —
 var bailed: Array[bool] = []          # has it leapt off the truck
 var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
 var talk_t: Array[float] = []         # seconds left of a mouth-flap while this animal calls out
+var vet_pause_t := 0.0                # seconds left of the full stop at a vet check
 var load_factor := 0.5
 var has_cage := false
 var has_leash := false
@@ -175,6 +176,7 @@ var stop_saved_idx: Array[int] = []    # passengers a stop pulled back from the 
 
 const FINISH_HOLD_TIME := 2.0   # seconds to celebrate arrival before moving on
 const RELIEF_TIME := 1.8        # how long the crew visibly perks up after a stop
+const VET_PAUSE := 1.6          # seconds the vehicle holds a full stop at the vet check
 
 
 func _ready() -> void:
@@ -220,7 +222,13 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 
-	if driving and fuel > 0.0:
+	if vet_pause_t > 0.0:
+		# Pulled up at the vet: hold a full stop for a beat while the animals are
+		# checked over, then let the player pull away again. Ignores drive input so
+		# the stop reads as deliberate, not a stall.
+		vet_pause_t = maxf(vet_pause_t - delta, 0.0)
+		speed = max(speed - BRAKING * 1.6 * delta, 0.0)
+	elif driving and fuel > 0.0:
 		var accel := veh_accel * (1.0 - load_factor * ACCEL_MASS_PENALTY)
 		speed = min(speed + accel * delta, veh_max_speed)
 	elif braking:
@@ -404,13 +412,16 @@ func _check_route_nodes() -> void:
 					Audio.play("rescue", -6.0)
 				message_label.text = ("Fed the crew — steadied %s just in time!" % rescued) if rescued != "" else "Fed the crew — spirits lift."
 			"vet":
-				# A full reset: everyone still aboard is calmed completely.
+				# A full reset: everyone still aboard is calmed completely. The
+				# vehicle also pulls up for a beat (VET_PAUSE) so the check reads as
+				# a real stop, not a drive-through.
 				var vet_saved := _restore_comfort(COMFORT_MAX)
 				relief_t = RELIEF_TIME
+				vet_pause_t = VET_PAUSE
 				Audio.play("vet", -7.0)
 				if vet_saved != "":
 					Audio.play("rescue", -6.0)
-				message_label.text = "Vet check — everyone's calm again."
+				message_label.text = "Vet check — hold still a moment..."
 
 
 func _restore_comfort(amount: float) -> String:
@@ -1475,6 +1486,7 @@ func _reset_run() -> void:
 	finish_hold = 0.0
 	advancing = false
 	relief_t = 0.0
+	vet_pause_t = 0.0
 	stop_saved_idx.clear()
 	voice_cd = randf_range(3.0, 5.0)   # first ambient call a few seconds into the drive
 	drive_pressed = false
