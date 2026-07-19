@@ -94,6 +94,14 @@ const HOP_KICK := 1.6              # upward launch speed per unit of jolt over t
 const HOP_MAX_VY := 150.0          # cap on launch speed, so a huge jolt still hops sanely
 const HOP_GRAVITY := 950.0         # pulls the hop back down to the ground
 
+# Driving over one of the roadside rock props bounces the rig (always) and, only
+# when taken at speed, rattles the crew — a discrete jolt tied to a thing you can
+# see, so "ease off for the rocks" is a legible choice. The comfort hit scales on
+# speed alone (not terrain roughness), so it targets reckless driving cleanly.
+const GROUND_PROP_SPACING := 55.0
+const ROCK_HIT_SPEED_FLOOR := 0.5  # below half throttle, a rock only bounces you — no comfort cost
+const ROCK_COMFORT_HIT := 24.0     # comfort a full-speed rock hit costs, before ride/temperament
+
 # The passengers ride from the prepared loadout. Their combined weight, as a
 # 0..1 load factor from GameState, feeds handling, fuel use, and suspension sag
 # so the cargo is felt, not just labelled.
@@ -260,9 +268,11 @@ func _process(delta: float) -> void:
 		var speed_ratio := speed / maxf(veh_max_speed, 1.0)
 		var speed_mult := 1.0 + FUEL_SPEED_PENALTY * speed_ratio * speed_ratio
 		fuel = max(fuel - veh_fuel_per_px * (1.0 + load_factor * FUEL_MASS_PENALTY) * speed_mult * dist, 0.0)
+	var old_x := vehicle_x
 	vehicle_x = min(vehicle_x + dist, track_len + TRACK_BUFFER)
 
 	_check_route_nodes()
+	_check_rocks(old_x, vehicle_x)
 
 	if relief_t > 0.0:
 		relief_t = max(relief_t - delta, 0.0)
@@ -565,6 +575,38 @@ func _update_hop(delta: float) -> void:
 		hop_vy = 0.0   # landed
 
 
+func _check_rocks(from_x: float, to_x: float) -> void:
+	# Fire a rock hit for every rock prop the vehicle rolled over this frame.
+	if to_x <= from_x:
+		return
+	var lush := _lush()
+	var i0 := int(floor(from_x / GROUND_PROP_SPACING)) - 1
+	var i1 := int(floor(to_x / GROUND_PROP_SPACING)) + 1
+	for i in range(i0, i1 + 1):
+		var rx := _rock_x_at(i, lush)
+		if rx >= 0.0 and from_x < rx and rx <= to_x:
+			_hit_rock()
+
+
+func _hit_rock() -> void:
+	# Rolling over a rock always bounces the rig — bigger the faster you hit it — so
+	# the bump is felt and seen. Above a speed floor it also jars the crew (harder the
+	# faster; the truck's soft ride eases it), which is what makes taking rocks flat
+	# out a way to lose animals. A crawl over a rock costs only the bounce.
+	var sr := clampf(speed / maxf(veh_max_speed, 1.0), 0.0, 1.0)
+	hop_vy = maxf(hop_vy, 28.0 + sr * (HOP_MAX_VY - 28.0))
+	Audio.play("jolt", lerpf(-18.0, -5.0, sr), 0.85 + sr * 0.4)
+	var over := clampf((sr - ROCK_HIT_SPEED_FLOOR) / (1.0 - ROCK_HIT_SPEED_FLOOR), 0.0, 1.0)
+	if over <= 0.0:
+		return
+	var hit := ROCK_COMFORT_HIT * over * over * veh_ride
+	for i in passengers.size():
+		if bailed[i]:
+			continue
+		var sens: float = TEMPERAMENT_SENSITIVITY.get(Animals.get_data(passengers[i]).get("temperament", ""), 1.0)
+		comforts[i] = maxf(comforts[i] - hit * sens, 0.0)
+
+
 func terrain_y(world_x: float) -> float:
 	# Per-level track: rough scales hill height, freq scales hill spacing, and
 	# phase shifts where the hills fall, so each level reads as its own route.
@@ -793,19 +835,37 @@ func _draw_hills(camera_x: float, parallax: float, y_base: float, amp: float, fr
 	draw_colored_polygon(pts, colour)
 
 
+func _lush() -> float:
+	# 0..1 "how green": high on gentle roads, low (rocky, sparse) on rough ones.
+	return clampf(1.0 - (track_rough - 0.5) / 0.85, 0.0, 1.0)
+
+
+func _rock_x_at(i: int, lush: float) -> float:
+	# World x of the rock prop at index i, or -1 if index i holds no rock. MUST
+	# mirror the placement and rock-selection in _draw_ground_props, so the bump the
+	# vehicle feels lines up with the rock the player sees.
+	if _rand01(i * 3 + 1) > 0.5 + 0.15 * lush:
+		return -1.0
+	var wx := (float(i) + _rand01(i * 7 + 2)) * GROUND_PROP_SPACING
+	if wx < 60.0 or wx > track_len + TRACK_BUFFER - 40.0:
+		return -1.0
+	if _rand01(i * 13 + 5) >= 0.15 + (1.0 - lush) * 0.5:
+		return -1.0   # this prop is a tree/bush/tuft, not a rock
+	return wx
+
+
 func _draw_ground_props(camera_x: float, view_w: float) -> void:
 	# Props sit at deterministic world positions on the terrain line and are drawn
 	# in world scale (through the zoom) so they pass by with the ground. The type
 	# mix tracks roughness: lush at gentle roughness, rocky and sparse when rough.
-	const SPACING := 55.0
-	var lush := clampf(1.0 - (track_rough - 0.5) / 0.85, 0.0, 1.0)
+	var lush := _lush()
 	var zoom := Vector2(WORLD_ZOOM, WORLD_ZOOM)
-	var start_i := int(floor(camera_x / SPACING)) - 1
-	var end_i := int(ceil((camera_x + view_w) / SPACING)) + 1
+	var start_i := int(floor(camera_x / GROUND_PROP_SPACING)) - 1
+	var end_i := int(ceil((camera_x + view_w) / GROUND_PROP_SPACING)) + 1
 	for i in range(start_i, end_i):
 		if _rand01(i * 3 + 1) > 0.5 + 0.15 * lush:
 			continue  # gaps between props, a touch denser when lush
-		var world_x := (float(i) + _rand01(i * 7 + 2)) * SPACING
+		var world_x := (float(i) + _rand01(i * 7 + 2)) * GROUND_PROP_SPACING
 		if world_x < 60.0 or world_x > track_len + TRACK_BUFFER - 40.0:
 			continue
 		var base := _w2s(Vector2(world_x, terrain_y(world_x)))
