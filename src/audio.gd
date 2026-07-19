@@ -94,7 +94,10 @@ func engine(speed: float, max_speed: float, shape: String) -> void:
 		_engine.play()
 	var t := clampf(speed / maxf(max_speed, 1.0), 0.0, 1.0)
 	_engine.pitch_scale = 0.7 + t * 1.15
-	_engine.volume_db = lerpf(-26.0, -10.0, t)
+	# The truck's low motor tone gets buried under the music bed, so lift it a few dB
+	# above the others so its engine reads clearly.
+	var shape_gain := 5.0 if shape == "truck" else 0.0
+	_engine.volume_db = lerpf(-26.0, -10.0, t) + shape_gain
 
 
 func stop_engine() -> void:
