@@ -9,6 +9,8 @@ const BRAKING := 260.0
 const COAST_DRAG := 52.0
 const FOOD_COMFORT := 40.0           # comfort restored at a food store
 const REST_HEIGHT := 25.0
+const TALK_TIME := 0.55              # seconds an animal flaps its mouth while calling out
+const TALK_FLAP := 0.11              # how long each open/closed mouth frame holds
 
 # The fuel mechanic. When false: no drain, never runs out, no fuel readout, and
 # fuel stops are omitted from routes. When true: distance burns fuel (heavier loads
@@ -151,6 +153,7 @@ var states: Array[String] = []        # "content" / "annoyed" / "delighted"
 var ever_annoyed: Array[bool] = []    # did this animal ever drop to annoyed — for scoring
 var bailed: Array[bool] = []          # has it leapt off the truck
 var bail_t: Array[float] = []         # seconds since it bailed, for the leaving animation
+var talk_t: Array[float] = []         # seconds left of a mouth-flap while this animal calls out
 var load_factor := 0.5
 var has_cage := false
 var has_leash := false
@@ -265,6 +268,8 @@ func _update_comfort(delta: float) -> void:
 		if bailed[i]:
 			bail_t[i] += delta
 			continue
+		if talk_t[i] > 0.0:
+			talk_t[i] = maxf(talk_t[i] - delta, 0.0)
 		var sens: float = TEMPERAMENT_SENSITIVITY.get(Animals.get_data(passengers[i]).get("temperament", ""), 1.0)
 		if over > 0.0:
 			comforts[i] -= over * COMFORT_LOSS_RATE * sens * delta
@@ -328,6 +333,7 @@ func _update_audio(delta: float) -> void:
 		else:
 			var pick: int = pool[randi() % pool.size()]
 			if Audio.voice_ambient(passengers[pick], -10.0, randf_range(0.95, 1.06)):
+				talk_t[pick] = TALK_TIME   # flap its mouth while the call sounds
 				voice_cd = randf_range(4.5, 8.5)
 			else:
 				voice_cd = 0.7   # a call is still sounding; check back shortly
@@ -1275,6 +1281,10 @@ func _draw_seat(center: Vector2, radius: float, index: int) -> void:
 	# no draw_set_transform here, which would overwrite that transform.)
 	var mood: String = states[index]
 	if not bailed[index]:
+		# While it's calling out, flap the mouth: the "delighted" sprite is the
+		# open-mouth frame, alternated with its real mood so the mouth reads as moving.
+		if talk_t[index] > 0.0 and mood != "delighted" and int(talk_t[index] / TALK_FLAP) % 2 == 0:
+			mood = "delighted"
 		_draw_critter(center, radius, passengers[index], mood, 1.0)
 		return
 	var t := bail_t[index]
@@ -1434,12 +1444,14 @@ func _reset_run() -> void:
 	ever_annoyed.clear()
 	bailed.clear()
 	bail_t.clear()
+	talk_t.clear()
 	for _p in passengers:
 		comforts.append(COMFORT_MAX)
 		states.append("content")
 		ever_annoyed.append(false)
 		bailed.append(false)
 		bail_t.append(0.0)
+		talk_t.append(0.0)
 	load_factor = GameState.load_factor()
 	has_cage = "divided_cage" in GameState.loadout_equipment
 	has_leash = "leash" in GameState.loadout_equipment
