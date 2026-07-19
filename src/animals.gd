@@ -76,6 +76,17 @@ const DATA := {
 		"comfort": {"jolt": 0.2, "accel": 1.5, "social": 1.0},
 		"disturbed_by": ["parrot"],
 	},
+	"capybara": {
+		"name": "Capybara", "size": 2, "weight": 34.0, "temperament": "placid",
+		"personality": "heavy and hungry, but unshakeable — a nervous neighbour settles beside it",
+		"colour": "#8a6b4a", "incompatible": [], "requires": [],
+		# Impossible to rattle: barely reacts to anything (tiny jolt only). Its point
+		# is the "soothes" flag — a calming presence that eases every neighbour's
+		# unease (see _calm_factor). Heavy, so it drives fuel use up: a benefit that
+		# costs range, not capacity.
+		"comfort": {"jolt": 0.15},
+		"soothes": true,
+	},
 }
 
 

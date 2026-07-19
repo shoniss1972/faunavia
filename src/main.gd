@@ -50,6 +50,7 @@ const CRITTER_ART := {
 	"parrot": {"scale": 3.3, "offset": Vector2(-0.05, -0.3)},
 	"goat": {"scale": 3.7, "offset": Vector2(-0.05, -0.5)},
 	"kiwi": {"scale": 3.4, "offset": Vector2(0.0, -0.28)},   # body-dominant art: keep the head+beak clear of the bed frame
+	"capybara": {"scale": 3.2, "offset": Vector2(0.0, -0.24)},   # low, wide, round body — sits a touch smaller than the kiwi
 }
 
 # Levels without a bespoke route get a length-scaled default (pumps spaced to the
@@ -157,6 +158,10 @@ const COMFORT_AIRTIME_GAIN := 2.0
 # "disturbed_by" list), in the shared over-threshold units, before sensitivity. A
 # divided cage keeps them apart and cancels it — the second valid plan.
 const COMFORT_SOCIAL_UNIT := 5.0
+# A "soothes" neighbour (the capybara) eases everyone else's unease: their comfort
+# drain is scaled by this while it rides alongside. Under 1.0 = a genuine benefit,
+# the mirror of social stress. Cancelled by a divided cage, same as social.
+const COMFORT_CALM_FACTOR := 0.55
 
 @onready var fuel_label: Label = %FuelLabel
 @onready var message_label: Label = %MessageLabel
@@ -343,6 +348,7 @@ func _update_comfort(delta: float) -> void:
 			if stress[src] > 0.0:
 				drain += stress[src] * Animals.comfort_sens(id, src)
 		drain += _social_stress(i) * Animals.comfort_sens(id, "social")
+		drain *= _calm_factor(i)
 		if drain > 0.0:
 			comforts[i] -= drain * COMFORT_LOSS_RATE * delta
 		else:
@@ -381,6 +387,20 @@ func _social_stress(index: int) -> float:
 		if passengers[j] in dislikes:
 			s += COMFORT_SOCIAL_UNIT
 	return s
+
+
+func _calm_factor(index: int) -> float:
+	# A soothing neighbour aboard (its data "soothes" true — the capybara) eases this
+	# animal's unease, scaling its drain down. A divided cage keeps them apart and so
+	# cancels the calm, mirroring _social_stress. An animal never soothes itself.
+	if has_cage:
+		return 1.0
+	for j in passengers.size():
+		if j == index or bailed[j]:
+			continue
+		if Animals.get_data(passengers[j]).get("soothes", false):
+			return COMFORT_CALM_FACTOR
+	return 1.0
 
 
 func _update_audio(delta: float) -> void:
@@ -1562,6 +1582,11 @@ func _draw_critter_shapes(center: Vector2, radius: float, id: String, mood: Stri
 		"kiwi":
 			# A dumpy, round-bodied flightless bird — no ears, a plump body hump.
 			draw_circle(center + Vector2(0, 9) * s, radius * 0.95, colour.darkened(0.05))
+		"capybara":
+			# A big, barrel-bodied rodent: broad body hump, small high-set ears.
+			draw_circle(center + Vector2(0, 10) * s, radius * 1.05, colour.darkened(0.05))
+			draw_circle(center + Vector2(-9, -9) * s, 3.5 * s, colour)
+			draw_circle(center + Vector2(9, -9) * s, 3.5 * s, colour)
 		_:
 			# Wombat: small round ears.
 			draw_circle(center + Vector2(-10, -10) * s, 5.0 * s, colour)

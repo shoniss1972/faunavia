@@ -148,9 +148,14 @@ beside it.”
 **Rule:** increases weight/fuel use but reduces comfort loss for one nervous neighbour.
 It is a beneficial passenger, not another liability.
 
-- [ ] Add a limited calming/adjacency effect that assists but does not grant immunity.
-- [ ] Art: chewing idle, slow blink, relaxed expressions and comic indifference.
-- [ ] Relationship: Rabbit gradually copies Capybara’s calm posture.
+- [x] Add a limited calming/adjacency effect that assists but does not grant immunity.
+      (COMFORT_CALM_FACTOR 0.55 via a "soothes" flag + _calm_factor; eases a
+      neighbour's drain, cancelled by a divided cage. Confirmed: rabbit bails solo
+      on L16's rough road, survives beside the capybara.)
+- [x] Art: content/annoyed/delighted sprites in (de-spilled from magenta, cropped);
+      delighted doubles as the open-mouth call frame. Chewing idle still to do.
+- [ ] Relationship: Rabbit gradually copies Capybara’s calm posture (visual idle; the
+      comfort benefit is shipped, the posture-copy animation is not).
 
 ### 3. Meerkat — Southern Africa
 
@@ -419,7 +424,8 @@ animal they want to unlock next.
 
 ### Phase C — remaining animal pairs
 
-10. [ ] Capybara + Levels 15–16.
+10. [~] Capybara + Levels 15–16. (Mechanic, art, both levels shipped and drive-tested.
+        Remaining: wetlands chapter scenery, chewing idle, Sanctuary Book entry.)
 11. [ ] Meerkat + Levels 17–18.
 12. [ ] Red Panda + Levels 19–20.
 13. [ ] Raccoon + Levels 21–22.

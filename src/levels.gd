@@ -200,6 +200,32 @@ const DATA := [
 		"hook": "The kiwi can't stand the parrot's chatter.",
 		"brief": "The parrot's endless chatter frays the kiwi's nerves the whole way. Keep your braking gentle AND lean on the vet stop to settle the kiwi — the parrot won't quiet down on its own.",
 	},
+	{
+		"title": "Level 15 — Calm Company",
+		"vehicle": "jeep", "deliver": ["capybara"], "equipment": [],
+		"length": 6800, "rough": 0.6, "freq": 1.0, "phase": 90.0,
+		"route": [
+			{"type": "fuel", "at": 0.28},
+			{"type": "food", "at": 0.5},
+			{"type": "fuel", "at": 0.72},
+			{"type": "sanctuary", "at": 1.0},
+		],
+		"hook": "A capybara that nothing can rattle — but it drinks fuel.",
+		"brief": "Meet the capybara: heavy, hungry and serenely unbothered. Bumps and hard stops roll right off it, so comfort is no worry here. Its weight is the catch — the jeep burns through fuel far faster. Don't sail past a pump on a full tank of confidence.",
+	},
+	{
+		"title": "Level 16 — Borrowed Nerves",
+		"vehicle": "jeep", "deliver": ["capybara", "rabbit"], "equipment": [],
+		"length": 6400, "rough": 0.85, "freq": 1.0, "phase": 300.0,
+		"route": [
+			{"type": "fuel", "at": 0.3},
+			{"type": "food", "at": 0.55},
+			{"type": "fuel", "at": 0.78},
+			{"type": "sanctuary", "at": 1.0},
+		],
+		"hook": "The rabbit rides calmer with the capybara beside it.",
+		"brief": "This rough road would rattle the timid rabbit to pieces on its own — but riding beside the unflappable capybara steadies its nerves. The trade: the capybara's weight makes fuel tight, so mind the pumps. A steadier passenger, bought with range.",
+	},
 ]
 
 const EQUIPMENT_NAMES := {
