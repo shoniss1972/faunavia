@@ -1,28 +1,25 @@
-extends Control
+extends Button
 
 # A code-drawn speaker toggle, so it renders identically everywhere (emoji glyphs
-# are missing from the export font and show blank on iOS/web). Emits `toggled` on a
-# tap; draws sound waves when on, a red slash when muted.
-
-signal toggled
+# are missing from the export font and show blank on iOS/web). It extends Button so
+# tap handling uses the engine's proven path — a raw Control with _gui_input did
+# not register the tap on iOS web. Draws sound waves when on, a red cross when muted.
 
 var muted := false
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	flat = true                       # we draw our own look, no button chrome
+	focus_mode = Control.FOCUS_NONE
+	pressed.connect(func(): emit_signal("toggled_mute"))
+
+
+signal toggled_mute
 
 
 func set_muted(m: bool) -> void:
 	muted = m
 	queue_redraw()
-
-
-func _gui_input(event: InputEvent) -> void:
-	if (event is InputEventMouseButton and event.pressed) \
-			or (event is InputEventScreenTouch and event.pressed):
-		emit_signal("toggled")
-		accept_event()
 
 
 func _draw() -> void:

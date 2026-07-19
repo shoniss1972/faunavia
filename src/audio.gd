@@ -52,6 +52,7 @@ func _ready() -> void:
 	_build_mute_button()
 	set_muted(muted)
 	set_process_input(true)
+	_use_playback_audio_session()
 
 
 # ---- public API ------------------------------------------------------------
@@ -88,9 +89,23 @@ func _input(event: InputEvent) -> void:
 	if not pressed:
 		return
 	_audio_unlocked = true
+	_use_playback_audio_session()   # re-assert now that the context is live
 	if _music and _music.stream:
 		_music.stop()
 		_music.play()
+
+
+func _use_playback_audio_session() -> void:
+	# On iOS Safari/WebKit, Web Audio defaults to the "ambient" session, which the
+	# physical silent switch mutes. Native apps and games use the "playback" session,
+	# which ignores the silent switch and follows the volume buttons. Set that so the
+	# game behaves like a native app rather than going quiet on silent mode.
+	# (navigator.audioSession is iOS 16.4+; harmless elsewhere. Web only.)
+	if not OS.has_feature("web"):
+		return
+	JavaScriptBridge.eval(
+		"try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; } } catch (e) {}",
+		true)
 
 
 func start_music() -> void:
@@ -166,7 +181,7 @@ func _build_mute_button() -> void:
 	_mute_button.offset_top = 8.0
 	_mute_button.offset_right = -8.0
 	_mute_button.offset_bottom = 52.0
-	_mute_button.toggled.connect(toggle_mute)
+	_mute_button.toggled_mute.connect(toggle_mute)
 	layer.add_child(_mute_button)
 
 
